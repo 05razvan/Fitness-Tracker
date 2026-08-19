@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -12,37 +12,49 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=ExerciseResponse, status_code=201)
-def create_exercise(
-    exercise: ExerciseCreate,
-    db: Session = Depends(get_db),
-):
-    existing_exercise = (
-        db.query(Exercise)
-        .filter(Exercise.name == exercise.name)
-        .first()
-    )
-
-    if existing_exercise:
-        raise HTTPException(
-            status_code=409,
-            detail="Exercise already exists",
-        )
-
-    new_exercise = Exercise(**exercise.model_dump())
-
-    db.add(new_exercise)
-    db.commit()
-    db.refresh(new_exercise)
-
-    return new_exercise
-
-
 @router.get("/", response_model=list[ExerciseResponse])
 def get_exercises(
+    search: str | None = Query(
+        default=None,
+        description="Search exercise names",
+    ),
+    primary_muscle: str | None = Query(
+        default=None,
+        description="Filter by primary muscle",
+    ),
+    equipment: str | None = Query(
+        default=None,
+        description="Filter by equipment",
+    ),
+    category: str | None = Query(
+        default=None,
+        description="Filter by category",
+    ),
     db: Session = Depends(get_db),
 ):
-    return db.query(Exercise).order_by(Exercise.name).all()
+    query = db.query(Exercise)
+
+    if search:
+        query = query.filter(
+            Exercise.name.ilike(f"%{search}%")
+        )
+
+    if primary_muscle:
+        query = query.filter(
+            Exercise.primary_muscle.ilike(primary_muscle)
+        )
+
+    if equipment:
+        query = query.filter(
+            Exercise.equipment.ilike(equipment)
+        )
+
+    if category:
+        query = query.filter(
+            Exercise.category.ilike(category)
+        )
+
+    return query.order_by(Exercise.name).all()
 
 
 @router.get("/{exercise_id}", response_model=ExerciseResponse)
@@ -63,3 +75,33 @@ def get_exercise(
         )
 
     return exercise
+
+
+@router.post(
+    "/",
+    response_model=ExerciseResponse,
+    status_code=201,
+)
+def create_exercise(
+    exercise: ExerciseCreate,
+    db: Session = Depends(get_db),
+):
+    existing = (
+        db.query(Exercise)
+        .filter(Exercise.name == exercise.name)
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Exercise already exists",
+        )
+
+    new_exercise = Exercise(**exercise.model_dump())
+
+    db.add(new_exercise)
+    db.commit()
+    db.refresh(new_exercise)
+
+    return new_exercise
