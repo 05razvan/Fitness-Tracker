@@ -19,6 +19,7 @@ class Exercise(Base):
     primary_muscle: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
+        index=True,
     )
 
     secondary_muscles: Mapped[str | None] = mapped_column(
@@ -29,14 +30,22 @@ class Exercise(Base):
     movement_pattern: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
+        index=True,
     )
 
     equipment: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
+        index=True,
     )
 
     exercise_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
+    )
+
+    category: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True,
     )

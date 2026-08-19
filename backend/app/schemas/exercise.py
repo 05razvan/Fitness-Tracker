@@ -8,6 +8,7 @@ class ExerciseCreate(BaseModel):
     movement_pattern: str | None = None
     equipment: str | None = None
     exercise_type: str
+    category: str
 
 
 class ExerciseResponse(BaseModel):
@@ -18,5 +19,6 @@ class ExerciseResponse(BaseModel):
     movement_pattern: str | None
     equipment: str | None
     exercise_type: str
+    category: str
 
     model_config = ConfigDict(from_attributes=True)
