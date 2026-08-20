@@ -56,3 +56,9 @@ class WorkoutResponse(BaseModel):
     exercises: list[WorkoutExerciseResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class WorkoutSetUpdate(BaseModel):
+    weight: float | None = None
+    reps: int | None = None
+    notes: str | None = None

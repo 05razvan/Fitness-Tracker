@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
-from app.schemas.workout import WorkoutCreate, WorkoutResponse
+from app.schemas.workout import WorkoutCreate, WorkoutResponse, WorkoutSetResponse, WorkoutSetUpdate
 
 
 router = APIRouter(
@@ -180,3 +180,39 @@ def complete_workout(
     db.commit()
 
     return get_workout_with_relationships(workout.id, db)
+
+
+@router.patch(
+    "/sets/{set_id}",
+    response_model=WorkoutSetResponse,
+)
+def update_workout_set(
+    set_id: int,
+    set_data: WorkoutSetUpdate,
+    db: Session = Depends(get_db),
+):
+    workout_set = (
+        db.query(WorkoutSet)
+        .filter(WorkoutSet.id == set_id)
+        .first()
+    )
+
+    if not workout_set:
+        raise HTTPException(
+            status_code=404,
+            detail="Workout set not found",
+        )
+
+    if set_data.weight is not None:
+        workout_set.weight = set_data.weight
+
+    if set_data.reps is not None:
+        workout_set.reps = set_data.reps
+
+    if set_data.notes is not None:
+        workout_set.notes = set_data.notes
+
+    db.commit()
+    db.refresh(workout_set)
+
+    return workout_set
