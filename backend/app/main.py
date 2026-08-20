@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from app.db.database import Base, engine
 from app.db import models
-from app.routers import exercises
+from app.routers import exercises, workouts
 from app.schemas.common import RootResponse, HealthResponse
 
 
@@ -17,6 +17,7 @@ app = FastAPI(
 
 
 app.include_router(exercises.router)
+app.include_router(workouts.router)
 
 
 @app.get(
