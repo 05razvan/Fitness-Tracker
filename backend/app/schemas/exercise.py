@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
@@ -22,3 +23,29 @@ class ExerciseResponse(BaseModel):
     category: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ExerciseHistorySet(BaseModel):
+    weight: float | None = None
+    reps: int | None = None
+
+
+class ExerciseHistoryEntry(BaseModel):
+    workout_id: int
+    date: datetime
+    sets: list[ExerciseHistorySet]
+
+
+class ExerciseHistorySetDetailed(BaseModel):
+    weight: float | None = None
+    reps: int | None = None
+    estimated_1rm: float | None = None
+    volume: float | None = None
+
+
+class ExerciseHistoryEntryDetailed(BaseModel):
+    workout_id: int
+    date: datetime
+    sets: list[ExerciseHistorySetDetailed]
+    total_volume: float
+    best_estimated_1rm: float | None = None
