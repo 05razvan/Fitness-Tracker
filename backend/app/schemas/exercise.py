@@ -49,3 +49,22 @@ class ExerciseHistoryEntryDetailed(BaseModel):
     sets: list[ExerciseHistorySetDetailed]
     total_volume: float
     best_estimated_1rm: float | None = None
+
+
+class ExerciseProgressionEntry(BaseModel):
+    workout_id: int
+    date: datetime
+    total_volume: float
+    best_estimated_1rm: float | None = None
+    best_weight: float | None = None
+    best_reps: int | None = None
+    is_pr: bool = False
+
+
+class ExerciseProgressionResponse(BaseModel):
+    exercise_id: int
+    exercise_name: str
+    personal_best_1rm: float | None = None
+    previous_best_1rm: float | None = None
+    improvement_percentage: float | None = None
+    sessions: list[ExerciseProgressionEntry]
