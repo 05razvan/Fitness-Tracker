@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
-from app.schemas.exercise import ExerciseHistoryEntry, ExerciseHistorySet, ExerciseHistoryEntryDetailed, ExerciseHistorySetDetailed, ExerciseProgressionEntry, ExerciseProgressionResponse,  ExerciseCreate, ExerciseResponse
+from app.schemas.exercise import ExerciseHistoryEntry, ExerciseHistorySet, ExerciseHistoryEntryDetailed, ExerciseHistorySetDetailed, ExerciseProgressionEntry, ExerciseProgressionResponse, PlateauAnalysis,  ExerciseCreate, ExerciseResponse
 
 
 router = APIRouter(
@@ -338,11 +338,109 @@ def get_exercise_progression(
             2,
         )
 
-    return ExerciseProgressionResponse(
+    return ExerciseProgressionResponse, PlateauAnalysis(
         exercise_id=exercise.id,
         exercise_name=exercise.name,
         personal_best_1rm=personal_best,
         previous_best_1rm=previous_best,
         improvement_percentage=improvement,
         sessions=sessions,
+    )
+
+
+@router.get(
+    "/{exercise_id}/plateau",
+    response_model=PlateauAnalysis,
+)
+def detect_exercise_plateau(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+):
+    exercise = (
+        db.query(Exercise)
+        .filter(Exercise.id == exercise_id)
+        .first()
+    )
+
+    if not exercise:
+        raise HTTPException(
+            status_code=404,
+            detail="Exercise not found",
+        )
+
+    workout_exercises = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.exercise_id == exercise_id)
+        .all()
+    )
+
+    session_1rms = []
+
+    for workout_exercise in workout_exercises:
+        sets = (
+            db.query(WorkoutSet)
+            .filter(
+                WorkoutSet.workout_exercise_id == workout_exercise.id,
+                WorkoutSet.weight.isnot(None),
+                WorkoutSet.reps.isnot(None),
+            )
+            .all()
+        )
+
+        best_1rm = None
+
+        for workout_set in sets:
+            if workout_set.weight <= 0 or workout_set.reps <= 0:
+                continue
+
+            estimated_1rm = (
+                workout_set.weight
+                * (1 + workout_set.reps / 30)
+            )
+
+            if best_1rm is None or estimated_1rm > best_1rm:
+                best_1rm = estimated_1rm
+
+        if best_1rm is not None:
+            session_1rms.append(best_1rm)
+
+    session_1rms = session_1rms[-3:]
+
+    if not session_1rms:
+        return PlateauAnalysis(
+            exercise_id=exercise.id,
+            exercise_name=exercise.name,
+            is_plateau=False,
+            sessions_analyzed=0,
+            current_1rm=None,
+            best_1rm=None,
+            message="Not enough performance data to detect a plateau.",
+        )
+
+    current_1rm = round(session_1rms[-1], 2)
+    best_1rm = round(max(session_1rms), 2)
+
+    is_plateau = (
+        len(session_1rms) >= 3
+        and max(session_1rms) - min(session_1rms) < 1
+    )
+
+    if is_plateau:
+        message = (
+            "Performance has remained stable across the "
+            "last 3 sessions. You may be approaching a plateau."
+        )
+    else:
+        message = (
+            "Performance is still changing across recent sessions."
+        )
+
+    return PlateauAnalysis(
+        exercise_id=exercise.id,
+        exercise_name=exercise.name,
+        is_plateau=is_plateau,
+        sessions_analyzed=len(session_1rms),
+        current_1rm=current_1rm,
+        best_1rm=best_1rm,
+        message=message,
     )
