@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from app.db.database import Base, engine
 from app.db import models
-from app.routers import exercises, workouts, presets
+from app.routers import recommendations,  exercises, workouts, presets
 from app.schemas.common import RootResponse, HealthResponse
 
 
@@ -40,3 +40,5 @@ def root():
 )
 def health_check():
     return {"status": "healthy"}
+
+app.include_router(recommendations.router)
