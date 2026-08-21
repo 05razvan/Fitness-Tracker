@@ -83,7 +83,70 @@ def get_exercise_recommendation(
     current_weight = max(weights)
     average_reps = sum(reps) / len(reps)
 
-    # Simple progressive-overload baseline.
+    # ---------------------------------------------------------
+    # Check recent performance for plateau detection.
+    # ---------------------------------------------------------
+
+    session_1rms = []
+
+    for workout_exercise in workout_exercises:
+        historical_sets = (
+            db.query(WorkoutSet)
+            .filter(
+                WorkoutSet.workout_exercise_id == workout_exercise.id,
+                WorkoutSet.weight.isnot(None),
+                WorkoutSet.reps.isnot(None),
+            )
+            .all()
+        )
+
+        best_1rm = None
+
+        for workout_set in historical_sets:
+            estimated_1rm = (
+                workout_set.weight
+                * (1 + workout_set.reps / 30)
+            )
+
+            if best_1rm is None or estimated_1rm > best_1rm:
+                best_1rm = estimated_1rm
+
+        if best_1rm is not None:
+            session_1rms.append(best_1rm)
+
+    recent_1rms = session_1rms[:3]
+
+    is_plateau = (
+        len(recent_1rms) >= 3
+        and max(recent_1rms) - min(recent_1rms) < 1
+    )
+
+    # ---------------------------------------------------------
+    # Plateau-aware recommendation.
+    # ---------------------------------------------------------
+
+    if is_plateau:
+        return ExerciseRecommendation(
+            exercise_id=exercise.id,
+            exercise_name=exercise.name,
+            recommended_weight=current_weight,
+            target_reps_min=8,
+            target_reps_max=12,
+            target_sets=len(sets),
+            recommendation=(
+                f"Keep the weight at {current_weight:g} kg "
+                "and focus on increasing reps."
+            ),
+            reason=(
+                "Your estimated 1RM has remained stable across "
+                "your last 3 sessions."
+            ),
+        )
+
+    # ---------------------------------------------------------
+    # Progressive overload recommendation.
+    # ---------------------------------------------------------
+
     if average_reps >= 8:
         if current_weight < 20:
             increase = 1.0
@@ -110,6 +173,10 @@ def get_exercise_recommendation(
                 f"{current_weight:g} kg in your latest session."
             ),
         )
+
+    # ---------------------------------------------------------
+    # Maintain weight and build reps.
+    # ---------------------------------------------------------
 
     return ExerciseRecommendation(
         exercise_id=exercise.id,
