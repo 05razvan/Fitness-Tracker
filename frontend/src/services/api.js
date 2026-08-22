@@ -1,10 +1,41 @@
-import axios from "axios";
+import axios from 'axios'
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: 'http://127.0.0.1:8000',
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
-});
+})
 
-export default api;
+export const getWorkouts = async () => {
+  const response = await api.get('/workouts/')
+  return response.data
+}
+
+export const getWorkout = async (workoutId) => {
+  const response = await api.get(`/workouts/${workoutId}`)
+  return response.data
+}
+
+export const getExercises = async (params = {}) => {
+  const response = await api.get('/exercises/', {
+    params,
+  })
+  return response.data
+}
+
+export const getExerciseRecommendation = async (exerciseId) => {
+  const response = await api.get(
+    `/recommendations/exercise/${exerciseId}`,
+  )
+  return response.data
+}
+
+export const getExercisePlateau = async (exerciseId) => {
+  const response = await api.get(
+    `/exercises/${exerciseId}/plateau`,
+  )
+  return response.data
+}
+
+export default api
