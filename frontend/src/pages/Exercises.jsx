@@ -6,101 +6,143 @@ import './Exercises.css'
 function Exercises() {
   const [exercises, setExercises] = useState([])
   const [search, setSearch] = useState('')
+  const [muscle, setMuscle] = useState('')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    const loadExercises = async () => {
-      try {
-        setLoading(true)
-        const data = await getExercises({
-          search: search || undefined,
-        })
-        setExercises(data)
-      } catch (err) {
-        console.error(err)
-        setError('Unable to load exercises.')
-      } finally {
-        setLoading(false)
-      }
+    loadExercises()
+  }, [])
+
+  async function loadExercises() {
+    try {
+      setLoading(true)
+      setError('')
+
+      const data = await getExercises()
+      setExercises(data)
+    } catch (err) {
+      console.error(err)
+      setError('Unable to load exercises.')
+    } finally {
+      setLoading(false)
     }
+  }
 
-    const timeout = setTimeout(loadExercises, 250)
+  const muscles = [
+    ...new Set(
+      exercises
+        .map((exercise) => exercise.primary_muscle)
+        .filter(Boolean),
+    ),
+  ]
 
-    return () => clearTimeout(timeout)
-  }, [search])
+  const filteredExercises = exercises.filter((exercise) => {
+    const matchesSearch = exercise.name
+      ?.toLowerCase()
+      .includes(search.toLowerCase())
+
+    const matchesMuscle =
+      !muscle || exercise.primary_muscle === muscle
+
+    return matchesSearch && matchesMuscle
+  })
 
   return (
-    <main className="exercises-page">
-      <header className="exercises-header">
+    <main className="page exercises-page">
+      <div className="page-header">
         <div>
           <span className="eyebrow">LIBRARY</span>
           <h1>Exercises</h1>
           <p>
-            Your exercise library and performance history.
+            Browse your exercise library and track individual
+            movements over time.
           </p>
         </div>
 
         <div className="exercise-count">
-          <strong>{exercises.length}</strong>
-          <span>EXERCISES</span>
+          <span>{filteredExercises.length}</span>
+          <small>exercises</small>
         </div>
-      </header>
+      </div>
 
       <section className="exercise-toolbar">
         <div className="search-wrapper">
           <span className="search-icon">⌕</span>
+
           <input
             type="search"
             placeholder="Search exercises..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            aria-label="Search exercises"
           />
         </div>
+
+        <select
+          value={muscle}
+          onChange={(event) => setMuscle(event.target.value)}
+        >
+          <option value="">All muscles</option>
+
+          {muscles.map((muscleName) => (
+            <option key={muscleName} value={muscleName}>
+              {muscleName}
+            </option>
+          ))}
+        </select>
       </section>
 
-      {loading ? (
+      {loading && (
         <div className="exercise-state">
-          <span className="loading-dot" />
-          Loading exercises...
+          <div className="loading-dot" />
+          <p>Loading exercise library...</p>
         </div>
-      ) : error ? (
-        <div className="exercise-state error">
-          {error}
+      )}
+
+      {error && (
+        <div className="exercise-state error-state">
+          <p>{error}</p>
+
+          <button onClick={loadExercises}>
+            Try again
+          </button>
         </div>
-      ) : exercises.length === 0 ? (
+      )}
+
+      {!loading && !error && filteredExercises.length === 0 && (
         <div className="exercise-state">
-          No exercises found.
+          <span className="empty-icon">⌕</span>
+          <h3>No exercises found</h3>
+          <p>
+            Try changing your search or muscle filter.
+          </p>
         </div>
-      ) : (
+      )}
+
+      {!loading && !error && filteredExercises.length > 0 && (
         <section className="exercise-grid">
-          {exercises.map((exercise) => (
+          {filteredExercises.map((exercise) => (
             <Link
-              to={`/exercises/${exercise.id}`}
-              className="exercise-library-card"
               key={exercise.id}
+              to={`/exercises/${exercise.id}`}
+              className="exercise-card"
             >
               <div className="exercise-card-top">
-                <span className="exercise-id">
-                  {String(exercise.id).padStart(3, '0')}
+                <span className="exercise-number">
+                  {String(exercise.id).padStart(2, '0')}
                 </span>
 
-                <span className="exercise-arrow">↗</span>
+                <span className="arrow">↗</span>
               </div>
 
               <div className="exercise-card-content">
                 <h2>{exercise.name}</h2>
 
-                <div className="exercise-meta">
-                  {exercise.primary_muscle && (
-                    <span>{exercise.primary_muscle}</span>
-                  )}
-
-                  {exercise.category && (
-                    <span>{exercise.category}</span>
-                  )}
-                </div>
+                {exercise.primary_muscle && (
+                  <span className="muscle-tag">
+                    {exercise.primary_muscle}
+                  </span>
+                )}
               </div>
             </Link>
           ))}
