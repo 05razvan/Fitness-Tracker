@@ -12,29 +12,33 @@ export const getWorkouts = async () => {
   return response.data
 }
 
-export const getWorkout = async (workoutId) => {
-  const response = await api.get(`/workouts/${workoutId}`)
+export const getWorkout = async (id) => {
+  const response = await api.get(`/workouts/${id}`)
   return response.data
 }
 
 export const getExercises = async (params = {}) => {
-  const response = await api.get('/exercises/', {
-    params,
-  })
+  const response = await api.get('/exercises/', { params })
   return response.data
 }
 
-export const getExerciseRecommendation = async (exerciseId) => {
-  const response = await api.get(
-    `/recommendations/exercise/${exerciseId}`,
-  )
+export const getExerciseProgression = async (id) => {
+  const response = await api.get(`/exercises/${id}/progression`)
   return response.data
 }
 
-export const getExercisePlateau = async (exerciseId) => {
-  const response = await api.get(
-    `/exercises/${exerciseId}/plateau`,
-  )
+export const getExercisePlateau = async (id) => {
+  const response = await api.get(`/exercises/${id}/plateau`)
+  return response.data
+}
+
+export const getExerciseRecommendation = async (id) => {
+  const response = await api.get(`/recommendations/exercise/${id}`)
+  return response.data
+}
+
+export const updateWorkoutSet = async (setId, data) => {
+  const response = await api.patch(`/workouts/sets/${setId}`, data)
   return response.data
 }
 

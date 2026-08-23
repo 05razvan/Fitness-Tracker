@@ -1,0 +1,245 @@
+.workouts-page {
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.page-header h1 {
+  margin: 0.5rem 0 0;
+}
+
+.page-header p {
+  margin: 0.75rem 0 0;
+  color: var(--muted-foreground);
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.primary-button {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border: none;
+}
+
+.primary-button:hover {
+  filter: brightness(1.1);
+  box-shadow: var(--glow-sm);
+}
+
+.primary-button:active,
+.secondary-button:active {
+  transform: scale(0.98);
+}
+
+.secondary-button {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border-hover);
+}
+
+.secondary-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.primary-button:focus-visible,
+.secondary-button:focus-visible,
+.workout-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.workouts-section {
+  max-width: 900px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-heading h2 {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+.workout-count {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.025em;
+}
+
+.workout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workout-card {
+  display: block;
+  padding: 1.5rem;
+  color: inherit;
+  text-decoration: none;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(8px);
+  transition: all 300ms ease-out;
+}
+
+.workout-card:hover {
+  background: var(--card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.workout-card-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workout-card h2 {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.workout-arrow {
+  color: var(--muted-foreground);
+  font-size: 1.5rem;
+  transition: all 200ms ease-out;
+}
+
+.workout-card:hover .workout-arrow {
+  color: var(--accent);
+  transform: translateX(3px);
+}
+
+.workout-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.meta-separator {
+  opacity: 0.5;
+}
+
+.empty-state {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.empty-state p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.empty-state h3 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.empty-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 50%;
+  color: var(--accent);
+  box-shadow: var(--glow-sm);
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.error-state {
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 3rem;
+  }
+
+  .page-header .primary-button {
+    width: 100%;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workout-card {
+    padding: 1.25rem;
+  }
+
+  .workout-card h2 {
+    font-size: 1.1rem;
+  }
+}

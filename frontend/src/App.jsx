@@ -1,18 +1,12 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+
 import AppLayout from './layouts/AppLayout'
+
 import Dashboard from './pages/Dashboard'
-
-function Workouts() {
-  return <div>Workouts</div>
-}
-
-function Exercises() {
-  return <div>Exercises</div>
-}
-
-function Analytics() {
-  return <div>Analytics</div>
-}
+import Workouts from './pages/Workouts'
+import Exercises from './pages/Exercises'
+import Progress from './pages/Progress'
+import WorkoutSession from './pages/WorkoutSession'
 
 function App() {
   return (
@@ -21,8 +15,9 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/workouts" element={<Workouts />} />
+          <Route path="/workouts/:id" element={<WorkoutSession />} />
           <Route path="/exercises" element={<Exercises />} />
-          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/progress" element={<Progress />} />
         </Route>
       </Routes>
     </BrowserRouter>

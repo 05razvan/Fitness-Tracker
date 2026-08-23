@@ -1,0 +1,224 @@
+.exercises-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 100px;
+}
+
+.exercises-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.exercises-header h1 {
+  margin: 8px 0 8px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: clamp(36px, 6vw, 52px);
+  letter-spacing: -0.04em;
+}
+
+.exercises-header p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.exercise-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.exercise-count strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px;
+}
+
+.exercise-count span {
+  color: var(--muted-foreground);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.exercise-toolbar {
+  margin-bottom: 24px;
+}
+
+.search-wrapper {
+  position: relative;
+  max-width: 520px;
+}
+
+.search-wrapper input {
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 16px 0 44px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  outline: none;
+  background: rgba(26, 26, 36, 0.6);
+  backdrop-filter: blur(8px);
+  color: var(--foreground);
+  font: inherit;
+  transition: all 200ms ease-out;
+}
+
+.search-wrapper input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.search-wrapper input:focus {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.12);
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-53%);
+  color: var(--muted-foreground);
+  font-size: 21px;
+  pointer-events: none;
+}
+
+.exercise-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.exercise-library-card {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  box-sizing: border-box;
+  text-decoration: none;
+  color: var(--foreground);
+  background: rgba(26, 26, 36, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 300ms ease-out;
+}
+
+.exercise-library-card:hover {
+  background: rgba(26, 26, 36, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.exercise-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exercise-id {
+  color: var(--muted-foreground);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.exercise-arrow {
+  color: var(--muted-foreground);
+  transition: color 200ms ease-out;
+}
+
+.exercise-library-card:hover .exercise-arrow {
+  color: var(--accent);
+}
+
+.exercise-card-content h2 {
+  margin: 0 0 12px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.exercise-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.exercise-meta span {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.exercise-state {
+  min-height: 250px;
+  display: grid;
+  place-items: center;
+  color: var(--muted-foreground);
+}
+
+.exercise-state.error {
+  color: #f87171;
+}
+
+.loading-dot {
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  display: inline-block;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.6);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 900px) {
+  .exercise-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .exercises-page {
+    padding: 24px 16px 80px;
+  }
+
+  .exercises-header {
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .exercise-count {
+    display: none;
+  }
+
+  .exercise-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .exercise-library-card {
+    min-height: 130px;
+  }
+}
