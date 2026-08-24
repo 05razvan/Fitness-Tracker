@@ -338,7 +338,7 @@ def get_exercise_progression(
             2,
         )
 
-    return ExerciseProgressionResponse, PlateauAnalysis(
+    return ExerciseProgressionResponse(
         exercise_id=exercise.id,
         exercise_name=exercise.name,
         personal_best_1rm=personal_best,
