@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+
 import {
   getExercisePlateau,
   getExerciseProgression,
   getExerciseRecommendation,
 } from '../services/api'
+
 import './ExerciseDetail.css'
 
 function ExerciseDetail() {
@@ -72,11 +74,17 @@ function ExerciseDetail() {
     recommendation?.exercise_name ||
     'Exercise'
 
-  const progressionEntries =
-    progression?.progression ||
-    progression?.entries ||
-    progression?.data ||
-    []
+  const sessions = progression?.sessions || []
+
+  const sessionsWithData = sessions.filter(
+    (session) => session.best_estimated_1rm != null,
+  )
+
+  const personalBest = progression?.personal_best_1rm
+
+  const previousBest = progression?.previous_best_1rm
+
+  const improvement = progression?.improvement_percentage
 
   return (
     <main className="page exercise-detail-page">
@@ -87,7 +95,9 @@ function ExerciseDetail() {
       <header className="exercise-detail-header">
         <div>
           <span className="eyebrow">EXERCISE INTELLIGENCE</span>
+
           <h1>{exerciseName}</h1>
+
           <p>
             Performance history, progression and adaptive training
             recommendations.
@@ -97,42 +107,36 @@ function ExerciseDetail() {
 
       <section className="intelligence-grid">
         <article className="glass-card stat-card">
-          <span className="stat-label">CURRENT 1RM</span>
+          <span className="stat-label">PERSONAL BEST</span>
 
           <strong>
-            {plateau?.current_1rm != null
-              ? `${plateau.current_1rm} kg`
-              : '—'}
+            {personalBest != null ? `${personalBest} kg` : '—'}
           </strong>
 
           <span className="stat-description">
-            Estimated one-rep max
+            Best estimated 1RM
           </span>
         </article>
 
         <article className="glass-card stat-card">
-          <span className="stat-label">BEST 1RM</span>
+          <span className="stat-label">IMPROVEMENT</span>
 
           <strong>
-            {plateau?.best_1rm != null
-              ? `${plateau.best_1rm} kg`
-              : '—'}
+            {improvement != null ? `${improvement}%` : '—'}
           </strong>
 
           <span className="stat-description">
-            Best recorded performance
+            Compared with previous best
           </span>
         </article>
 
         <article className="glass-card stat-card">
           <span className="stat-label">SESSIONS</span>
 
-          <strong>
-            {plateau?.sessions_analyzed ?? 0}
-          </strong>
+          <strong>{sessionsWithData.length}</strong>
 
           <span className="stat-description">
-            Sessions analysed
+            Sessions with recorded performance
           </span>
         </article>
       </section>
@@ -168,19 +172,28 @@ function ExerciseDetail() {
                   {recommendation.target_sets} sets
                 </span>
               </div>
+
+              {recommendation.recommendation && (
+                <p className="recommendation-reason">
+                  {recommendation.recommendation}
+                </p>
+              )}
+
+              {recommendation.reason && (
+                <p className="recommendation-reason">
+                  {recommendation.reason}
+                </p>
+              )}
             </div>
           ) : (
             <div className="recommendation-empty">
               <span className="recommendation-line" />
 
-              <h3>
-                {recommendation?.recommendation ||
-                  'Not enough data yet'}
-              </h3>
+              <h3>Not enough data yet</h3>
 
               <p>
-                {recommendation?.reason ||
-                  'Continue logging your workouts to generate adaptive recommendations.'}
+                Continue logging your workouts to generate adaptive
+                recommendations.
               </p>
             </div>
           )}
@@ -210,18 +223,23 @@ function ExerciseDetail() {
                   : 'Progressing'}
               </strong>
 
-              <p>{plateau?.message}</p>
+              <p>
+                {plateau?.message ||
+                  'Keep logging workouts to analyse your progression.'}
+              </p>
             </div>
           </div>
 
           <div className="plateau-meta">
             <span>
-              {plateau?.sessions_analyzed ?? 0} sessions analysed
+              {plateau?.sessions_analyzed ??
+                sessionsWithData.length}{' '}
+              sessions analysed
             </span>
 
-            {plateau?.best_1rm != null && (
+            {personalBest != null && (
               <span>
-                Best: {plateau.best_1rm} kg
+                Best: {personalBest} kg
               </span>
             )}
           </div>
@@ -234,9 +252,15 @@ function ExerciseDetail() {
             <span className="eyebrow">HISTORY</span>
             <h2>Progression</h2>
           </div>
+
+          {previousBest != null && (
+            <span className="progression-summary">
+              Previous best: {previousBest} kg
+            </span>
+          )}
         </div>
 
-        {progressionEntries.length === 0 ? (
+        {sessionsWithData.length === 0 ? (
           <div className="progression-empty">
             <p>
               Keep logging this exercise to build your progression
@@ -245,38 +269,50 @@ function ExerciseDetail() {
           </div>
         ) : (
           <div className="progression-list">
-            {progressionEntries.map((entry, index) => (
-              <div
-                className="progression-row"
-                key={entry.id || entry.date || index}
-              >
-                <div className="progression-session">
-                  <span>
-                    Session {index + 1}
-                  </span>
+            {sessionsWithData
+              .slice()
+              .reverse()
+              .map((entry, index) => (
+                <div
+                  className="progression-row"
+                  key={entry.workout_id || entry.date || index}
+                >
+                  <div className="progression-session">
+                    <span>
+                      Session {sessionsWithData.length - index}
+                    </span>
 
-                  {entry.date && (
-                    <small>
-                      {new Date(entry.date).toLocaleDateString()}
-                    </small>
-                  )}
-                </div>
+                    {entry.date && (
+                      <small>
+                        {new Date(entry.date).toLocaleDateString(
+                          undefined,
+                          {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          },
+                        )}
+                      </small>
+                    )}
+                  </div>
 
-                <div className="progression-value">
-                  {entry.best_estimated_1rm != null ? (
-                    <>
+                  <div className="progression-performance">
+                    <div>
                       <strong>
-                        {entry.best_estimated_1rm} kg
+                        {entry.best_weight} kg × {entry.best_reps}
                       </strong>
 
-                      <small>estimated 1RM</small>
-                    </>
-                  ) : (
-                    <span>—</span>
-                  )}
+                      <small>
+                        {entry.best_estimated_1rm} kg estimated 1RM
+                      </small>
+                    </div>
+
+                    {entry.is_pr && (
+                      <span className="pr-badge">PR</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </section>

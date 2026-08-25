@@ -390,4 +390,77 @@
   .progression-row {
     align-items: flex-start;
   }
+  .recommendation-reason {
+  margin: 20px 0 0;
+  color: #71717a;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.progression-summary {
+  color: #71717a;
+  font-size: 0.75rem;
+}
+
+.progression-performance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.progression-performance > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.progression-performance strong {
+  color: #fafafa;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.progression-performance small {
+  color: #52525b;
+  font-size: 0.7rem;
+}
+
+.pr-badge {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 500px) {
+  .card-heading {
+    gap: 12px;
+  }
+
+  .progression-summary {
+    display: none;
+  }
+
+  .progression-performance {
+    gap: 8px;
+  }
+
+  .progression-performance > div {
+    align-items: flex-end;
+  }
+
+  .progression-performance strong {
+    font-size: 0.9rem;
+  }
+
+  .pr-badge {
+    font-size: 0.55rem;
+  }
+}
 }
