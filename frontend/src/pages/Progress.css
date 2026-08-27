@@ -75,6 +75,125 @@
   gap: 16px;
 }
 
+.analytics-card {
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+.analytics-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+.analytics-heading h2 {
+  margin: 8px 0 0;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+.exercise-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 240px;
+}
+
+.exercise-selector span,
+.selected-stats span {
+  color: #71717a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.exercise-selector select {
+  min-height: 44px;
+  padding: 0 38px 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #12121a;
+  color: #fafafa;
+}
+
+.exercise-selector select:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.65);
+  outline-offset: 2px;
+}
+
+.selected-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.selected-stats > div {
+  padding: 15px 18px;
+  background: rgba(10, 10, 15, 0.45);
+}
+
+.selected-stats strong {
+  display: block;
+  margin-top: 7px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.selected-stats .positive-value { color: #a3e635; }
+.trend-chart-wrap { width: 100%; overflow: hidden; }
+.trend-chart { display: block; width: 100%; min-width: 540px; }
+.chart-grid-line { stroke: rgba(255, 255, 255, 0.07); stroke-width: 1; }
+.chart-axis-label,
+.chart-date-label { fill: #52525b; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.chart-area { fill: rgba(245, 158, 11, 0.07); }
+.chart-line { fill: none; stroke: #f59e0b; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.chart-point { fill: #12121a; stroke: #f59e0b; stroke-width: 2; }
+.chart-point-pr { fill: #f59e0b; filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.6)); }
+
+.chart-empty {
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  color: #71717a;
+  text-align: center;
+}
+
+.training-insight {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(245, 158, 11, 0.14);
+  border-radius: 9px;
+  background: rgba(245, 158, 11, 0.045);
+}
+
+.insight-mark {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+}
+
+.training-insight strong { color: #d4d4d8; font-size: 0.8rem; }
+.training-insight p { margin: 4px 0 0; color: #71717a; font-size: 0.78rem; line-height: 1.55; }
+
 .exercise-progress-card,
 .recent-card {
   padding: 28px;
@@ -294,6 +413,10 @@
   .progress-main-grid {
     grid-template-columns: 1fr;
   }
+
+  .selected-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 500px) {
@@ -319,8 +442,32 @@
   }
 
   .exercise-progress-card,
-  .recent-card {
+  .recent-card,
+  .analytics-card {
     padding: 22px;
+  }
+
+  .analytics-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .exercise-selector {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .selected-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .selected-stats > div {
+    padding: 13px;
+  }
+
+  .trend-chart-wrap {
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
 
   .exercise-progress-row {
