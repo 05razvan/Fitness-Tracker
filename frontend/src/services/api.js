@@ -17,6 +17,11 @@ export const getWorkout = async (id) => {
   return response.data
 }
 
+export const completeWorkout = async (id) => {
+  const response = await api.patch(`/workouts/${id}/complete`)
+  return response.data
+}
+
 export const getExercises = async (params = {}) => {
   const response = await api.get('/exercises/', { params })
   return response.data
@@ -41,7 +46,5 @@ export const updateWorkoutSet = async (setId, data) => {
   const response = await api.patch(`/workouts/sets/${setId}`, data)
   return response.data
 }
-
-
 
 export default api

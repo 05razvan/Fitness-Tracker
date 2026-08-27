@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getWorkout, updateWorkoutSet } from '../services/api'
+import {
+  completeWorkout,
+  getWorkout,
+  updateWorkoutSet,
+} from '../services/api'
 import './WorkoutSession.css'
 
 function WorkoutSession() {
@@ -10,7 +14,9 @@ function WorkoutSession() {
   const [workout, setWorkout] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null)
+  const [completing, setCompleting] = useState(false)
   const [error, setError] = useState(null)
+  const [completionError, setCompletionError] = useState('')
 
   useEffect(() => {
     const loadWorkout = async () => {
@@ -34,14 +40,24 @@ function WorkoutSession() {
     [workout],
   )
 
-  const completedSets = allSets.filter(
-    (set) => set.weight !== null && set.weight !== undefined,
-  ).length
+  const isSetComplete = (set) =>
+    set.weight !== null &&
+    set.weight !== undefined &&
+    set.weight > 0 &&
+    set.reps !== null &&
+    set.reps !== undefined &&
+    set.reps > 0
+
+  const completedSets = allSets.filter(isSetComplete).length
+  const incompleteSets = allSets.length - completedSets
+  const isCompleted = Boolean(workout?.completed_at)
 
   const progress =
     allSets.length > 0 ? Math.round((completedSets / allSets.length) * 100) : 0
 
   const handleSetChange = async (setId, field, value) => {
+    if (isCompleted) return
+
     const numericValue = value === '' ? null : Number(value)
 
     setWorkout((current) => ({
@@ -58,6 +74,8 @@ function WorkoutSession() {
   }
 
   const saveSet = async (set) => {
+    if (isCompleted) return
+
     setSaving(set.id)
 
     try {
@@ -81,6 +99,38 @@ function WorkoutSession() {
       setError('Unable to save this set.')
     } finally {
       setSaving(null)
+    }
+  }
+
+  const handleCompleteWorkout = async () => {
+    if (isCompleted || completing) return
+
+    if (incompleteSets > 0) {
+      const shouldComplete = window.confirm(
+        `${incompleteSets} ${incompleteSets === 1 ? 'set is' : 'sets are'} incomplete. Complete this workout anyway?`,
+      )
+
+      if (!shouldComplete) return
+    }
+
+    try {
+      setCompleting(true)
+      setCompletionError('')
+      const completedWorkout = await completeWorkout(workout.id)
+      setWorkout(completedWorkout)
+      navigate('/workouts', {
+        replace: true,
+        state: {
+          completedWorkout: completedWorkout.name || 'Workout',
+        },
+      })
+    } catch (err) {
+      console.error(err)
+      setCompletionError(
+        'Unable to complete this workout. Your saved sets are still available.',
+      )
+    } finally {
+      setCompleting(false)
     }
   }
 
@@ -119,7 +169,9 @@ function WorkoutSession() {
         </button>
 
         <div className="session-heading">
-          <span className="eyebrow">ACTIVE SESSION</span>
+          <span className="eyebrow">
+            {isCompleted ? 'COMPLETED SESSION' : 'ACTIVE SESSION'}
+          </span>
           <h1>{workout.name}</h1>
           <p>
             {workout.exercises.length} exercises · {allSets.length} sets
@@ -129,12 +181,12 @@ function WorkoutSession() {
         <div className="session-progress">
           <div className="progress-label">
             <span>SESSION</span>
-            <strong>{progress}%</strong>
+              <strong>{isCompleted ? 'DONE' : `${progress}%`}</strong>
           </div>
           <div className="progress-track">
             <div
               className="progress-fill"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${isCompleted ? 100 : progress}%` }}
             />
           </div>
         </div>
@@ -166,9 +218,7 @@ function WorkoutSession() {
 
             <div className="sets-list">
               {exercise.sets.map((set) => {
-                const complete =
-                  set.weight !== null &&
-                  set.weight !== undefined
+                const complete = isSetComplete(set)
 
                 return (
                   <div
@@ -194,6 +244,7 @@ function WorkoutSession() {
                             event.target.value,
                           )
                         }
+                        disabled={isCompleted}
                       />
                       <span className="unit">kg</span>
                     </label>
@@ -212,16 +263,23 @@ function WorkoutSession() {
                             event.target.value,
                           )
                         }
+                        disabled={isCompleted}
                       />
                     </label>
 
-                    <button
-                      className="save-set"
-                      onClick={() => saveSet(set)}
-                      disabled={saving === set.id}
-                    >
-                      {saving === set.id ? '...' : complete ? '✓' : 'Save'}
-                    </button>
+                    {isCompleted ? (
+                      <span className="set-locked">
+                        {complete ? '✓' : '—'}
+                      </span>
+                    ) : (
+                      <button
+                        className="save-set"
+                        onClick={() => saveSet(set)}
+                        disabled={saving === set.id}
+                      >
+                        {saving === set.id ? '...' : complete ? '✓' : 'Save'}
+                      </button>
+                    )}
                   </div>
                 )
               })}
@@ -231,16 +289,28 @@ function WorkoutSession() {
       </section>
 
       <footer className="session-footer">
+        {completionError && (
+          <p className="completion-error" role="alert">
+            {completionError}
+          </p>
+        )}
+
         <button
           className="secondary-action"
           onClick={() => navigate('/workouts')}
         >
-          Exit workout
+          {isCompleted ? 'Back to workouts' : 'Exit workout'}
         </button>
 
-        <button className="primary-action">
-          Complete workout
-        </button>
+        {!isCompleted && (
+          <button
+            className="primary-action"
+            onClick={handleCompleteWorkout}
+            disabled={completing}
+          >
+            {completing ? 'Completing...' : 'Complete workout'}
+          </button>
+        )}
       </footer>
     </main>
   )

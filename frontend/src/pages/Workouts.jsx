@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import api from '../services/api'
+import { Link, useLocation } from 'react-router-dom'
+import { getWorkouts } from '../services/api'
 import './Workouts.css'
 
 function formatDate(dateString) {
@@ -28,9 +28,12 @@ function WorkoutCard({ workout }) {
           <h2>{workout.name}</h2>
         </div>
 
-        <span className="workout-arrow" aria-hidden="true">
-          →
-        </span>
+        <div className="workout-card-status">
+          <span className={workout.completed_at ? 'status-pill status-completed' : 'status-pill'}>
+            {workout.completed_at ? 'COMPLETED' : 'IN PROGRESS'}
+          </span>
+          <span className="workout-arrow" aria-hidden="true">→</span>
+        </div>
       </div>
 
       <div className="workout-card-meta">
@@ -45,6 +48,7 @@ function WorkoutCard({ workout }) {
 }
 
 function Workouts() {
+  const location = useLocation()
   const [workouts, setWorkouts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -52,8 +56,7 @@ function Workouts() {
   useEffect(() => {
     async function loadWorkouts() {
       try {
-        const response = await api.get('/workouts/')
-        setWorkouts(response.data)
+        setWorkouts(await getWorkouts())
       } catch (err) {
         console.error(err)
         setError('Unable to load your workouts.')
@@ -67,6 +70,12 @@ function Workouts() {
 
   return (
     <main className="page workouts-page">
+      {location.state?.completedWorkout && (
+        <div className="completion-banner" role="status">
+          <span>✓</span>
+          <p><strong>{location.state.completedWorkout}</strong> completed and added to your training history.</p>
+        </div>
+      )}
       <div className="page-header">
         <div>
           <span className="eyebrow">TRAINING LOG</span>

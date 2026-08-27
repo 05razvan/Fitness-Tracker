@@ -175,9 +175,10 @@ def complete_workout(
             detail="Workout not found",
         )
 
-    workout.completed_at = datetime.utcnow()
+    if workout.completed_at is None:
+        workout.completed_at = datetime.utcnow()
 
-    db.commit()
+        db.commit()
 
     return get_workout_with_relationships(workout.id, db)
 
