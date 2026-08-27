@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { Link } from 'react-router-dom'
 import './Dashboard.css'
 
 const API_URL = 'http://127.0.0.1:8000'
@@ -57,9 +58,9 @@ function Dashboard() {
           </p>
         </div>
 
-        <button className="primary-button">
+        <Link to="/workouts/new" className="primary-button">
           + Start Workout
-        </button>
+        </Link>
       </header>
 
       <section className="stats-grid" aria-label="Training statistics">

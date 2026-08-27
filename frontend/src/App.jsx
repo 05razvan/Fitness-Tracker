@@ -7,6 +7,7 @@ import Workouts from './pages/Workouts'
 import Exercises from './pages/Exercises'
 import Progress from './pages/Progress'
 import WorkoutSession from './pages/WorkoutSession'
+import StartWorkout from './pages/StartWorkout'
 import ExerciseDetail from './pages/ExerciseDetail'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/workouts" element={<Workouts />} />
+          <Route path="/workouts/new" element={<StartWorkout />} />
           <Route path="/workouts/:id" element={<WorkoutSession />} />
           <Route path="/exercises" element={<Exercises />} />
           <Route path="/progress" element={<Progress />} />
