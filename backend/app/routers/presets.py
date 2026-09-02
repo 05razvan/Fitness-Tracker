@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -6,7 +6,7 @@ from app.core.time import utc_now
 from app.db.models.exercise import Exercise
 from app.db.models.preset import PresetExercise, WorkoutPreset
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
-from app.schemas.preset import PresetCreate, PresetResponse
+from app.schemas.preset import PresetCreate, PresetResponse, PresetUpdate
 from app.schemas.workout import WorkoutResponse
 from app.routers.workouts import get_workout_with_relationships
 
@@ -90,6 +90,21 @@ def create_preset(
     return get_preset_with_exercises(preset.id, db)
 
 
+def validate_preset_exercises(preset_data: PresetCreate, db: Session):
+    exercise_ids = [item.exercise_id for item in preset_data.exercises]
+    existing_ids = {
+        item.id
+        for item in db.query(Exercise.id).filter(Exercise.id.in_(exercise_ids)).all()
+    }
+    missing_ids = sorted(set(exercise_ids) - existing_ids)
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Exercises not found: {', '.join(map(str, missing_ids))}",
+        )
+
+
 @router.get(
     "/",
     response_model=list[PresetResponse],
@@ -129,6 +144,68 @@ def get_preset(
         )
 
     return preset
+
+
+@router.put(
+    "/{preset_id}",
+    response_model=PresetResponse,
+)
+def update_preset(
+    preset_id: int,
+    preset_data: PresetUpdate,
+    db: Session = Depends(get_db),
+):
+    preset = db.query(WorkoutPreset).filter(WorkoutPreset.id == preset_id).first()
+
+    if not preset:
+        raise HTTPException(status_code=404, detail="Preset not found")
+
+    validate_preset_exercises(preset_data, db)
+    preset.name = preset_data.name
+    preset.description = preset_data.description
+    existing_exercises = (
+        db.query(PresetExercise)
+        .filter(PresetExercise.preset_id == preset_id)
+        .all()
+    )
+    for existing_exercise in existing_exercises:
+        db.delete(existing_exercise)
+    db.flush()
+
+    for exercise_data in preset_data.exercises:
+        db.add(
+            PresetExercise(
+                preset_id=preset.id,
+                exercise_id=exercise_data.exercise_id,
+                order=exercise_data.order,
+                target_sets=exercise_data.target_sets,
+                target_reps=exercise_data.target_reps,
+                notes=exercise_data.notes,
+            )
+        )
+
+    db.commit()
+    return get_preset_with_exercises(preset.id, db)
+
+
+@router.delete("/{preset_id}", status_code=204)
+def delete_preset(
+    preset_id: int,
+    db: Session = Depends(get_db),
+):
+    preset = db.query(WorkoutPreset).filter(WorkoutPreset.id == preset_id).first()
+
+    if not preset:
+        raise HTTPException(status_code=404, detail="Preset not found")
+
+    (
+        db.query(PresetExercise)
+        .filter(PresetExercise.preset_id == preset_id)
+        .delete(synchronize_session=False)
+    )
+    db.delete(preset)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.post(
