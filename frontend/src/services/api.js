@@ -80,4 +80,10 @@ export const deleteWorkoutExercise = async (workoutExerciseId) => {
   await api.delete(`/workouts/exercises/${workoutExerciseId}`)
 }
 
+export const reorderWorkoutExercises = async (workoutId, orderedExerciseIds) => {
+  await api.patch(`/workouts/${workoutId}/exercises/order`, {
+    ordered_exercise_ids: orderedExerciseIds,
+  })
+}
+
 export default api

@@ -290,7 +290,6 @@
 
 .remove-exercise {
   min-height: 36px;
-  margin-left: auto;
   padding: 0 11px;
   border: 1px solid rgba(248, 113, 113, 0.18);
   border-radius: 7px;
@@ -299,6 +298,33 @@
   cursor: pointer;
   font: inherit;
   font-size: 11px;
+}
+
+.exercise-order-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.exercise-order-actions > button:not(.remove-exercise) {
+  width: 36px;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font: inherit;
+}
+
+.exercise-order-actions > button:not(.remove-exercise):hover:not(:disabled) {
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--accent);
+}
+
+.exercise-order-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .remove-exercise:hover:not(:disabled) {
@@ -715,6 +741,10 @@
   }
 
   .remove-exercise {
+    flex: 1;
+  }
+
+  .exercise-order-actions {
     width: 100%;
     margin-left: 0;
   }

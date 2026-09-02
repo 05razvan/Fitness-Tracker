@@ -16,11 +16,13 @@ from app.routers.workouts import (
     delete_workout_exercise,
     delete_workout_set,
     get_workout_with_relationships,
+    reorder_workout_exercises,
     update_workout,
     update_workout_set,
 )
 from app.schemas.workout import (
     WorkoutExerciseAdd,
+    WorkoutExerciseOrderUpdate,
     WorkoutResponse,
     WorkoutSetUpdate,
     WorkoutUpdate,
@@ -290,3 +292,36 @@ def test_exercise_can_be_added_and_removed_from_active_workout(db_session):
 
     assert db_session.query(WorkoutExercise).count() == 0
     assert db_session.query(WorkoutSet).count() == 0
+
+
+def test_workout_exercises_can_be_reordered(db_session):
+    workout = Workout(user_id=1, name="Ordered workout")
+    db_session.add(workout)
+    db_session.flush()
+    first = WorkoutExercise(workout_id=workout.id, exercise_id=1, order=1)
+    second = WorkoutExercise(workout_id=workout.id, exercise_id=2, order=2)
+    db_session.add_all([first, second])
+    db_session.commit()
+
+    reorder_workout_exercises(
+        workout.id,
+        WorkoutExerciseOrderUpdate(
+            ordered_exercise_ids=[second.id, first.id],
+        ),
+        db_session,
+    )
+    db_session.refresh(first)
+    db_session.refresh(second)
+
+    assert second.order == 1
+    assert first.order == 2
+
+    with pytest.raises(HTTPException) as error:
+        reorder_workout_exercises(
+            workout.id,
+            WorkoutExerciseOrderUpdate(ordered_exercise_ids=[first.id]),
+            db_session,
+        )
+
+    assert error.value.status_code == 400
+    assert error.value.detail == "Exercise order must contain every workout exercise"

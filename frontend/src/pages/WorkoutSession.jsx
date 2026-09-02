@@ -8,6 +8,7 @@ import {
   deleteWorkoutSet,
   getExercises,
   getWorkout,
+  reorderWorkoutExercises,
   updateWorkout,
   updateWorkoutSet,
 } from '../services/api'
@@ -443,6 +444,40 @@ function WorkoutSession() {
     }
   }
 
+  const moveExercise = async (exerciseIndex, direction) => {
+    const targetIndex = exerciseIndex + direction
+    if (
+      modifyingWorkoutExercises ||
+      targetIndex < 0 ||
+      targetIndex >= workout.exercises.length
+    ) {
+      return
+    }
+
+    const reordered = [...workout.exercises]
+    const movedExercise = reordered[exerciseIndex]
+    reordered[exerciseIndex] = reordered[targetIndex]
+    reordered[targetIndex] = movedExercise
+    setModifyingWorkoutExercises(true)
+    setSaveError('')
+
+    try {
+      await reorderWorkoutExercises(workout.id, reordered.map((exercise) => exercise.id))
+      setWorkout((current) => ({
+        ...current,
+        exercises: reordered.map((exercise, index) => ({
+          ...exercise,
+          order: index + 1,
+        })),
+      }))
+    } catch (err) {
+      console.error(err)
+      setSaveError('Unable to reorder exercises. Please try again.')
+    } finally {
+      setModifyingWorkoutExercises(false)
+    }
+  }
+
   if (loading) {
     return (
       <main className="session-page">
@@ -599,14 +634,32 @@ function WorkoutSession() {
                 )}
               </div>
               {!isCompleted && (
-                <button
-                  type="button"
-                  className="remove-exercise"
-                  onClick={() => handleRemoveExercise(exercise)}
-                  disabled={modifyingWorkoutExercises}
-                >
-                  Remove exercise
-                </button>
+                <div className="exercise-order-actions">
+                  <button
+                    type="button"
+                    aria-label={`Move ${exercise.exercise_name} up`}
+                    onClick={() => moveExercise(exerciseIndex, -1)}
+                    disabled={exerciseIndex === 0 || modifyingWorkoutExercises}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Move ${exercise.exercise_name} down`}
+                    onClick={() => moveExercise(exerciseIndex, 1)}
+                    disabled={exerciseIndex === workout.exercises.length - 1 || modifyingWorkoutExercises}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    className="remove-exercise"
+                    onClick={() => handleRemoveExercise(exercise)}
+                    disabled={modifyingWorkoutExercises}
+                  >
+                    Remove
+                  </button>
+                </div>
               )}
             </div>
 

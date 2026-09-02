@@ -9,6 +9,7 @@ from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
 from app.schemas.workout import (
     WorkoutCreate,
     WorkoutExerciseAdd,
+    WorkoutExerciseOrderUpdate,
     WorkoutExerciseResponse,
     WorkoutResponse,
     WorkoutSetResponse,
@@ -296,6 +297,41 @@ def add_workout_exercise(
     return next(
         item for item in hydrated_workout.exercises if item.id == workout_exercise.id
     )
+
+
+@router.patch("/{workout_id}/exercises/order", status_code=204)
+def reorder_workout_exercises(
+    workout_id: int,
+    order_data: WorkoutExerciseOrderUpdate,
+    db: Session = Depends(get_db),
+):
+    ensure_workout_is_active(workout_id, db)
+    workout_exercises = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.workout_id == workout_id)
+        .all()
+    )
+    existing_ids = {item.id for item in workout_exercises}
+    requested_ids = order_data.ordered_exercise_ids
+
+    if len(requested_ids) != len(set(requested_ids)):
+        raise HTTPException(
+            status_code=400,
+            detail="Exercise order contains duplicate IDs",
+        )
+
+    if set(requested_ids) != existing_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Exercise order must contain every workout exercise",
+        )
+
+    exercise_by_id = {item.id: item for item in workout_exercises}
+    for order, workout_exercise_id in enumerate(requested_ids, start=1):
+        exercise_by_id[workout_exercise_id].order = order
+
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.delete("/exercises/{workout_exercise_id}", status_code=204)

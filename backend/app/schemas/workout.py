@@ -22,6 +22,10 @@ class WorkoutExerciseAdd(BaseModel):
     target_sets: int = Field(default=3, ge=1, le=10)
 
 
+class WorkoutExerciseOrderUpdate(BaseModel):
+    ordered_exercise_ids: list[int] = Field(min_length=1)
+
+
 class WorkoutCreate(BaseModel):
     name: str | None = None
     started_at: datetime | None = None
