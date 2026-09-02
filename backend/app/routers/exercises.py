@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models.exercise import Exercise
+from app.db.models.preset import PresetExercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
-from app.schemas.exercise import ExerciseHistoryEntry, ExerciseHistorySet, ExerciseHistoryEntryDetailed, ExerciseHistorySetDetailed, ExerciseProgressionEntry, ExerciseProgressionOverview, ExerciseProgressionResponse, PlateauAnalysis,  ExerciseCreate, ExerciseResponse
+from app.schemas.exercise import ExerciseHistoryEntry, ExerciseHistorySet, ExerciseHistoryEntryDetailed, ExerciseHistorySetDetailed, ExerciseProgressionEntry, ExerciseProgressionOverview, ExerciseProgressionResponse, PlateauAnalysis,  ExerciseCreate, ExerciseResponse, ExerciseUpdate
 
 
 router = APIRouter(
@@ -209,7 +211,7 @@ def create_exercise(
 ):
     existing = (
         db.query(Exercise)
-        .filter(Exercise.name == exercise.name)
+        .filter(func.lower(Exercise.name) == exercise.name.lower())
         .first()
     )
 
@@ -226,6 +228,70 @@ def create_exercise(
     db.refresh(new_exercise)
 
     return new_exercise
+
+
+@router.put(
+    "/{exercise_id}",
+    response_model=ExerciseResponse,
+)
+def update_exercise(
+    exercise_id: int,
+    exercise_data: ExerciseUpdate,
+    db: Session = Depends(get_db),
+):
+    exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    duplicate = (
+        db.query(Exercise)
+        .filter(
+            func.lower(Exercise.name) == exercise_data.name.lower(),
+            Exercise.id != exercise_id,
+        )
+        .first()
+    )
+    if duplicate:
+        raise HTTPException(status_code=409, detail="Exercise name already exists")
+
+    for field, value in exercise_data.model_dump().items():
+        setattr(exercise, field, value)
+
+    db.commit()
+    db.refresh(exercise)
+    return exercise
+
+
+@router.delete("/{exercise_id}", status_code=204)
+def delete_exercise(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+):
+    exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    used_in_workout = (
+        db.query(WorkoutExercise.id)
+        .filter(WorkoutExercise.exercise_id == exercise_id)
+        .first()
+    )
+    used_in_preset = (
+        db.query(PresetExercise.id)
+        .filter(PresetExercise.exercise_id == exercise_id)
+        .first()
+    )
+    if used_in_workout or used_in_preset:
+        raise HTTPException(
+            status_code=409,
+            detail="Exercise is used by workout history or a preset",
+        )
+
+    db.delete(exercise)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get(

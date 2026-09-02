@@ -1,15 +1,33 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ExerciseCreate(BaseModel):
-    name: str
-    primary_muscle: str
-    secondary_muscles: str | None = None
-    movement_pattern: str | None = None
-    equipment: str | None = None
-    exercise_type: str
-    category: str
+    name: str = Field(min_length=1, max_length=150)
+    primary_muscle: str = Field(min_length=1, max_length=100)
+    secondary_muscles: str | None = Field(default=None, max_length=500)
+    movement_pattern: str | None = Field(default=None, max_length=100)
+    equipment: str | None = Field(default=None, max_length=100)
+    exercise_type: str = Field(min_length=1, max_length=50)
+    category: str = Field(min_length=1, max_length=50)
+
+    @field_validator(
+        "name",
+        "primary_muscle",
+        "secondary_muscles",
+        "movement_pattern",
+        "equipment",
+        "exercise_type",
+        "category",
+        mode="before",
+    )
+    @classmethod
+    def strip_text(cls, value):
+        return value.strip() if value is not None else None
+
+
+class ExerciseUpdate(ExerciseCreate):
+    pass
 
 
 class ExerciseResponse(BaseModel):
