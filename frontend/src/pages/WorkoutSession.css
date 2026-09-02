@@ -122,6 +122,103 @@
   white-space: nowrap;
 }
 
+.rest-timer {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 18px;
+  align-items: center;
+  overflow: hidden;
+  margin-bottom: 24px;
+  padding: 15px 18px 19px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(10, 10, 15, 0.5);
+}
+
+.rest-timer-active {
+  border-color: rgba(245, 158, 11, 0.24);
+  background: rgba(245, 158, 11, 0.045);
+}
+
+.rest-timer-copy {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.rest-timer-copy > span {
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.rest-timer-copy strong {
+  min-width: 52px;
+  color: var(--foreground);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+}
+
+.rest-timer-copy small {
+  color: var(--muted-foreground);
+}
+
+.rest-duration-options,
+.rest-timer-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.rest-duration-options button,
+.rest-timer-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+.rest-duration-options button:hover:not(:disabled),
+.rest-timer-actions button:hover {
+  border-color: rgba(245, 158, 11, 0.38);
+  color: var(--accent);
+}
+
+.rest-duration-options button.selected,
+.rest-timer-actions .rest-start {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.09);
+  color: var(--accent);
+}
+
+.rest-duration-options button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.rest-timer-track {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rest-timer-track div {
+  height: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+  transition: width 250ms linear;
+}
+
 .progress-label {
   display: flex;
   justify-content: space-between;
@@ -485,6 +582,24 @@
 
   .session-details {
     grid-template-columns: 1fr;
+  }
+
+  .rest-timer {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .rest-timer-copy {
+    grid-template-columns: auto auto;
+  }
+
+  .rest-timer-copy small {
+    grid-column: 1 / -1;
+  }
+
+  .rest-duration-options button,
+  .rest-timer-actions button {
+    flex: 1;
   }
 
   .metadata-save-status {

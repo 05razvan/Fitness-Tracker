@@ -13,6 +13,12 @@ import './WorkoutSession.css'
 const formatPreviousSet = (set) =>
   `${Number(set.weight).toLocaleString(undefined, { maximumFractionDigits: 1 })} kg × ${set.reps}`
 
+const formatTimer = (seconds) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainder = seconds % 60
+  return `${minutes}:${String(remainder).padStart(2, '0')}`
+}
+
 function WorkoutSession() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -28,6 +34,10 @@ function WorkoutSession() {
   const [loadError, setLoadError] = useState(null)
   const [saveError, setSaveError] = useState('')
   const [completionError, setCompletionError] = useState('')
+  const [restDuration, setRestDuration] = useState(90)
+  const [restTotal, setRestTotal] = useState(90)
+  const [restRemaining, setRestRemaining] = useState(0)
+  const [restEndsAt, setRestEndsAt] = useState(null)
 
   useEffect(() => {
     const loadWorkout = async () => {
@@ -77,6 +87,41 @@ function WorkoutSession() {
     window.addEventListener('beforeunload', warnBeforeUnload)
     return () => window.removeEventListener('beforeunload', warnBeforeUnload)
   }, [dirtyIds, dirtyMetadata])
+
+  useEffect(() => {
+    if (restEndsAt === null) return undefined
+
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.ceil((restEndsAt - Date.now()) / 1000))
+      setRestRemaining(remaining)
+
+      if (remaining === 0) {
+        setRestEndsAt(null)
+      }
+    }
+
+    updateTimer()
+    const interval = window.setInterval(updateTimer, 250)
+    return () => window.clearInterval(interval)
+  }, [restEndsAt])
+
+  const startRestTimer = (duration = restDuration) => {
+    setRestTotal(duration)
+    setRestRemaining(duration)
+    setRestEndsAt(Date.now() + duration * 1000)
+  }
+
+  const addRestTime = () => {
+    if (restEndsAt === null) return
+    setRestTotal((current) => current + 30)
+    setRestRemaining((current) => current + 30)
+    setRestEndsAt((current) => current + 30000)
+  }
+
+  const stopRestTimer = () => {
+    setRestEndsAt(null)
+    setRestRemaining(0)
+  }
 
   const handleWorkoutFieldChange = (field, value) => {
     if (isCompleted) return
@@ -167,6 +212,9 @@ function WorkoutSession() {
         return next
       })
       setSaveError('')
+      if (isSetComplete(updated)) {
+        startRestTimer()
+      }
       return true
     } catch (err) {
       console.error(err)
@@ -418,6 +466,43 @@ function WorkoutSession() {
               : 'Details save automatically'}
         </p>
       </section>
+
+      {!isCompleted && (
+        <section className={`rest-timer ${restEndsAt !== null ? 'rest-timer-active' : ''}`} aria-label="Rest timer">
+          <div className="rest-timer-copy">
+            <span>REST TIMER</span>
+            <strong>{formatTimer(restRemaining || restDuration)}</strong>
+            <small>{restEndsAt !== null ? 'Recovery in progress' : 'Starts after a saved set'}</small>
+          </div>
+          <div className="rest-duration-options" aria-label="Rest duration">
+            {[60, 90, 120].map((duration) => (
+              <button
+                type="button"
+                className={restDuration === duration ? 'selected' : ''}
+                disabled={restEndsAt !== null}
+                onClick={() => setRestDuration(duration)}
+                key={duration}
+              >
+                {duration}s
+              </button>
+            ))}
+          </div>
+          <div className="rest-timer-actions">
+            <button type="button" className="rest-start" onClick={() => startRestTimer()}>
+              {restEndsAt !== null ? 'Restart' : 'Start'}
+            </button>
+            {restEndsAt !== null && (
+              <>
+                <button type="button" onClick={addRestTime}>+30s</button>
+                <button type="button" onClick={stopRestTimer}>Stop</button>
+              </>
+            )}
+          </div>
+          <div className="rest-timer-track" aria-hidden="true">
+            <div style={{ width: `${Math.min(100, (restRemaining / restTotal) * 100)}%` }} />
+          </div>
+        </section>
+      )}
 
       <section className="session-content">
         {workout.exercises.map((exercise, exerciseIndex) => (
