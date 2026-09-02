@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { getExercises, getExerciseProgression } from '../services/api'
+import { getProgressionOverview } from '../services/api'
 
 import './Progress.css'
 
@@ -99,26 +99,16 @@ function Progress() {
     try {
       setLoading(true)
       setError('')
-      const exerciseData = await getExercises()
-      const progressionData = await Promise.all(
-        exerciseData.map(async (exercise) => {
-          try {
-            return { ...exercise, ...(await getExerciseProgression(exercise.id)) }
-          } catch (requestError) {
-            console.error(`Unable to load progression for exercise ${exercise.id}`, requestError)
-            return { ...exercise, exercise_name: exercise.name, sessions: [] }
-          }
-        }),
-      )
+      const progressionData = await getProgressionOverview()
 
-      setExercises(exerciseData)
+      setExercises(progressionData)
       setProgress(progressionData)
       setSelectedId((current) => {
         if (current) return current
         const firstTracked = progressionData.find((item) =>
           item.sessions?.some((session) => session.best_estimated_1rm != null),
         )
-        return String(firstTracked?.id ?? exerciseData[0]?.id ?? '')
+        return String(firstTracked?.id ?? progressionData[0]?.id ?? '')
       })
     } catch (requestError) {
       console.error(requestError)

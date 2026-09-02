@@ -70,6 +70,11 @@ export const getExerciseProgression = async (id) => {
   return response.data
 }
 
+export const getProgressionOverview = async () => {
+  const response = await api.get('/exercises/progression-overview')
+  return response.data
+}
+
 export const getExercisePlateau = async (id) => {
   const response = await api.get(`/exercises/${id}/plateau`)
   return response.data

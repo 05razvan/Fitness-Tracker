@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
-  getExerciseProgression,
   getExerciseRecommendation,
-  getExercises,
+  getProgressionOverview,
   getWorkouts,
 } from '../services/api'
 
@@ -73,9 +72,9 @@ function Dashboard() {
     try {
       setLoading(true)
       setError('')
-      const [workoutData, exerciseData] = await Promise.all([
+      const [workoutData, progressionOverview] = await Promise.all([
         getWorkouts(),
-        getExercises(),
+        getProgressionOverview(),
       ])
       setWorkouts(workoutData)
 
@@ -84,17 +83,9 @@ function Dashboard() {
           (workout.exercises || []).map((exercise) => exercise.exercise_id),
         ),
       )
-      const trainedExercises = exerciseData.filter((exercise) => trainedIds.has(exercise.id))
-      const progressionData = (await Promise.all(
-        trainedExercises.map(async (exercise) => {
-          try {
-            return { ...exercise, ...(await getExerciseProgression(exercise.id)) }
-          } catch (requestError) {
-            console.error(`Unable to load dashboard progression for exercise ${exercise.id}`, requestError)
-            return null
-          }
-        }),
-      )).filter(Boolean)
+      const progressionData = progressionOverview.filter((exercise) =>
+        trainedIds.has(exercise.id),
+      )
       setProgressions(progressionData)
 
       const latestProgression = progressionData
