@@ -10,3 +10,6 @@ class ExerciseRecommendation(BaseModel):
     target_sets: int | None = None
     recommendation: str
     reason: str
+    prediction_method: str = "rules"
+    predicted_reps: float | None = None
+    confidence: float | None = None

@@ -5,6 +5,10 @@ from app.db.database import get_db
 from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
 from app.schemas.recommendation import ExerciseRecommendation
+from app.services.performance_prediction import (
+    PerformanceSet,
+    predict_next_performance,
+)
 
 router = APIRouter(
     prefix="/recommendations",
@@ -83,6 +87,74 @@ def get_exercise_recommendation(
     current_weight = max(weights)
     average_reps = sum(reps) / len(reps)
 
+    if current_weight < 20:
+        increase = 1.0
+    elif current_weight < 50:
+        increase = 2.5
+    else:
+        increase = 5.0
+
+    performance_sets = []
+
+    for workout_exercise in workout_exercises:
+        workout = (
+            db.query(Workout)
+            .filter(Workout.id == workout_exercise.workout_id)
+            .first()
+        )
+
+        if workout is None or workout.completed_at is None:
+            continue
+
+        historical_sets = (
+            db.query(WorkoutSet)
+            .filter(
+                WorkoutSet.workout_exercise_id == workout_exercise.id,
+                WorkoutSet.weight.isnot(None),
+                WorkoutSet.reps.isnot(None),
+            )
+            .all()
+        )
+
+        performance_sets.extend(
+            PerformanceSet(
+                performed_at=workout.started_at,
+                weight=historical_set.weight,
+                reps=historical_set.reps,
+                set_number=historical_set.set_number,
+            )
+            for historical_set in historical_sets
+        )
+
+    prediction = predict_next_performance(
+        performance_sets,
+        [current_weight, current_weight + increase],
+    )
+
+    if prediction is not None:
+        target_reps = max(1, round(prediction.predicted_reps))
+
+        return ExerciseRecommendation(
+            exercise_id=exercise.id,
+            exercise_name=exercise.name,
+            recommended_weight=prediction.weight,
+            target_reps_min=max(1, target_reps - 1),
+            target_reps_max=target_reps + 1,
+            target_sets=len(sets),
+            recommendation=(
+                f"Try {prediction.weight:g} kg and aim for "
+                f"{max(1, target_reps - 1)}–{target_reps + 1} reps."
+            ),
+            reason=(
+                "A personal performance model trained on "
+                f"{prediction.session_count} completed sessions predicts "
+                f"about {prediction.predicted_reps:.1f} reps."
+            ),
+            prediction_method="gradient_boosting",
+            predicted_reps=round(prediction.predicted_reps, 1),
+            confidence=round(prediction.confidence, 2),
+        )
+
     # ---------------------------------------------------------
     # Check recent performance for plateau detection.
     # ---------------------------------------------------------
@@ -148,13 +220,6 @@ def get_exercise_recommendation(
     # ---------------------------------------------------------
 
     if average_reps >= 8:
-        if current_weight < 20:
-            increase = 1.0
-        elif current_weight < 50:
-            increase = 2.5
-        else:
-            increase = 5.0
-
         recommended_weight = current_weight + increase
 
         return ExerciseRecommendation(

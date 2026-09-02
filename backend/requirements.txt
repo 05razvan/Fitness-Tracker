@@ -19,6 +19,7 @@ Pygments==2.21.0
 pytest==9.1.1
 python-dotenv==1.2.3
 SQLAlchemy==2.0.52
+scikit-learn==1.7.2
 starlette==1.6.0
 typing-inspection==0.4.4
 typing_extensions==4.16.0
