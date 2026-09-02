@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.core.time import utc_now
 from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
 from app.schemas.workout import (
@@ -124,7 +123,7 @@ def create_workout(
     workout = Workout(
         user_id=user_id,
         name=workout_data.name,
-        started_at=workout_data.started_at or datetime.utcnow(),
+        started_at=workout_data.started_at or utc_now(),
         body_weight=workout_data.body_weight,
         notes=workout_data.notes,
     )
@@ -392,7 +391,7 @@ def complete_workout(
         )
 
     if workout.completed_at is None:
-        workout.completed_at = datetime.utcnow()
+        workout.completed_at = utc_now()
 
         db.commit()
 

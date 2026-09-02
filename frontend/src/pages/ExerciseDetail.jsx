@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import {
@@ -18,11 +18,7 @@ function ExerciseDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadExerciseData()
-  }, [exerciseId])
-
-  async function loadExerciseData() {
+  const loadExerciseData = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
@@ -43,7 +39,11 @@ function ExerciseDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [exerciseId])
+
+  useEffect(() => {
+    loadExerciseData()
+  }, [loadExerciseData])
 
   if (loading) {
     return (

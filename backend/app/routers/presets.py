@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.core.time import utc_now
 from app.db.models.exercise import Exercise
 from app.db.models.preset import PresetExercise, WorkoutPreset
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
@@ -154,7 +153,7 @@ def start_workout_from_preset(
     workout = Workout(
         user_id=user_id,
         name=preset.name,
-        started_at=datetime.utcnow(),
+        started_at=utc_now(),
     )
 
     db.add(workout)
