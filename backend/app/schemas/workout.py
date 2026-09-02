@@ -7,6 +7,8 @@ class WorkoutSetCreate(BaseModel):
     set_number: int
     weight: float | None = None
     reps: int
+    rpe: float | None = Field(default=None, ge=1, le=10)
+    rir: int | None = Field(default=None, ge=0, le=10)
     notes: str | None = None
 
 
@@ -39,6 +41,8 @@ class WorkoutSetResponse(BaseModel):
     set_number: int
     weight: float | None
     reps: int
+    rpe: float | None
+    rir: int | None
     notes: str | None
 
     model_config = ConfigDict(from_attributes=True)
@@ -78,4 +82,6 @@ class WorkoutUpdate(BaseModel):
 class WorkoutSetUpdate(BaseModel):
     weight: float | None = Field(default=None, ge=0)
     reps: int | None = Field(default=None, ge=0)
+    rpe: float | None = Field(default=None, ge=1, le=10)
+    rir: int | None = Field(default=None, ge=0, le=10)
     notes: str | None = None

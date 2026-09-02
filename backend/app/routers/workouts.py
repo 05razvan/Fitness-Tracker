@@ -165,6 +165,8 @@ def create_workout(
                 set_number=set_data.set_number,
                 weight=set_data.weight,
                 reps=set_data.reps,
+                rpe=set_data.rpe,
+                rir=set_data.rir,
                 notes=set_data.notes,
             )
 
@@ -530,6 +532,12 @@ def update_workout_set(
 
     if "reps" in set_data.model_fields_set:
         workout_set.reps = set_data.reps or 0
+
+    if "rpe" in set_data.model_fields_set:
+        workout_set.rpe = set_data.rpe
+
+    if "rir" in set_data.model_fields_set:
+        workout_set.rir = set_data.rir
 
     if "notes" in set_data.model_fields_set:
         workout_set.notes = set_data.notes

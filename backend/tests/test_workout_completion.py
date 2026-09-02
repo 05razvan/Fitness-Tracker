@@ -96,12 +96,20 @@ def test_update_set_can_clear_recorded_values(db_session):
 
     response = update_workout_set(
         workout_set.id,
-        WorkoutSetUpdate(weight=None, reps=None, notes=None),
+        WorkoutSetUpdate(
+            weight=None,
+            reps=None,
+            rpe=8.5,
+            rir=2,
+            notes=None,
+        ),
         db_session,
     )
 
     assert response.weight is None
     assert response.reps == 0
+    assert response.rpe == 8.5
+    assert response.rir == 2
     assert response.notes is None
 
 

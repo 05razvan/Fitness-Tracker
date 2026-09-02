@@ -99,6 +99,16 @@ class WorkoutSet(Base):
         nullable=False,
     )
 
+    rpe: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    rir: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
     notes: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
