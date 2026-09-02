@@ -204,13 +204,13 @@ def update_workout_set(
             detail="Workout set not found",
         )
 
-    if set_data.weight is not None:
+    if "weight" in set_data.model_fields_set:
         workout_set.weight = set_data.weight
 
-    if set_data.reps is not None:
-        workout_set.reps = set_data.reps
+    if "reps" in set_data.model_fields_set:
+        workout_set.reps = set_data.reps or 0
 
-    if set_data.notes is not None:
+    if "notes" in set_data.model_fields_set:
         workout_set.notes = set_data.notes
 
     db.commit()

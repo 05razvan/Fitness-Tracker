@@ -13,9 +13,11 @@ function WorkoutSession() {
 
   const [workout, setWorkout] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(null)
+  const [savingIds, setSavingIds] = useState(new Set())
+  const [dirtyIds, setDirtyIds] = useState(new Set())
   const [completing, setCompleting] = useState(false)
-  const [error, setError] = useState(null)
+  const [loadError, setLoadError] = useState(null)
+  const [saveError, setSaveError] = useState('')
   const [completionError, setCompletionError] = useState('')
 
   useEffect(() => {
@@ -26,7 +28,7 @@ function WorkoutSession() {
         setWorkout(data)
       } catch (err) {
         console.error(err)
-        setError('Unable to load this workout.')
+        setLoadError('Unable to load this workout.')
       } finally {
         setLoading(false)
       }
@@ -55,6 +57,18 @@ function WorkoutSession() {
   const progress =
     allSets.length > 0 ? Math.round((completedSets / allSets.length) * 100) : 0
 
+  useEffect(() => {
+    if (dirtyIds.size === 0) return undefined
+
+    const warnBeforeUnload = (event) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [dirtyIds])
+
   const handleSetChange = async (setId, field, value) => {
     if (isCompleted) return
 
@@ -71,12 +85,16 @@ function WorkoutSession() {
         ),
       })),
     }))
+    setDirtyIds((current) => new Set(current).add(setId))
+    setSaveError('')
   }
 
   const saveSet = async (set) => {
-    if (isCompleted) return
+    if (isCompleted || savingIds.has(set.id) || !dirtyIds.has(set.id)) {
+      return true
+    }
 
-    setSaving(set.id)
+    setSavingIds((current) => new Set(current).add(set.id))
 
     try {
       const updated = await updateWorkoutSet(set.id, {
@@ -94,11 +112,42 @@ function WorkoutSession() {
           ),
         })),
       }))
+      setDirtyIds((current) => {
+        const next = new Set(current)
+        next.delete(set.id)
+        return next
+      })
+      setSaveError('')
+      return true
     } catch (err) {
       console.error(err)
-      setError('Unable to save this set.')
+      setSaveError('Unable to save this set. Check your connection and try again.')
+      return false
     } finally {
-      setSaving(null)
+      setSavingIds((current) => {
+        const next = new Set(current)
+        next.delete(set.id)
+        return next
+      })
+    }
+  }
+
+  const savePendingSets = async () => {
+    const unsavedSets = allSets.filter((set) => dirtyIds.has(set.id))
+    const saveResults = await Promise.all(unsavedSets.map(saveSet))
+    return saveResults.every(Boolean)
+  }
+
+  const handleExitWorkout = async () => {
+    if (isCompleted || dirtyIds.size === 0) {
+      navigate('/workouts')
+      return
+    }
+
+    const saved = await savePendingSets()
+
+    if (saved) {
+      navigate('/workouts')
     }
   }
 
@@ -116,6 +165,15 @@ function WorkoutSession() {
     try {
       setCompleting(true)
       setCompletionError('')
+      const saved = await savePendingSets()
+
+      if (!saved) {
+        setCompletionError(
+          'The workout was not completed because some sets could not be saved.',
+        )
+        return
+      }
+
       const completedWorkout = await completeWorkout(workout.id)
       setWorkout(completedWorkout)
       navigate('/workouts', {
@@ -145,11 +203,11 @@ function WorkoutSession() {
     )
   }
 
-  if (error || !workout) {
+  if (loadError || !workout) {
     return (
       <main className="session-page">
         <div className="session-error">
-          <p>{error || 'Workout not found.'}</p>
+          <p>{loadError || 'Workout not found.'}</p>
           <button onClick={() => navigate('/workouts')}>
             Back to workouts
           </button>
@@ -224,6 +282,11 @@ function WorkoutSession() {
                   <div
                     className={`set-row ${complete ? 'set-complete' : ''}`}
                     key={set.id}
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget)) {
+                        saveSet(set)
+                      }
+                    }}
                   >
                     <div className="set-number">
                       {set.set_number}
@@ -275,9 +338,15 @@ function WorkoutSession() {
                       <button
                         className="save-set"
                         onClick={() => saveSet(set)}
-                        disabled={saving === set.id}
+                        disabled={savingIds.has(set.id) || !dirtyIds.has(set.id)}
                       >
-                        {saving === set.id ? '...' : complete ? '✓' : 'Save'}
+                        {savingIds.has(set.id)
+                          ? 'Saving'
+                          : dirtyIds.has(set.id)
+                            ? 'Save'
+                            : complete
+                              ? '✓'
+                              : '—'}
                       </button>
                     )}
                   </div>
@@ -289,6 +358,12 @@ function WorkoutSession() {
       </section>
 
       <footer className="session-footer">
+        {saveError && (
+          <p className="completion-error" role="alert">
+            {saveError}
+          </p>
+        )}
+
         {completionError && (
           <p className="completion-error" role="alert">
             {completionError}
@@ -297,7 +372,8 @@ function WorkoutSession() {
 
         <button
           className="secondary-action"
-          onClick={() => navigate('/workouts')}
+          onClick={handleExitWorkout}
+          disabled={savingIds.size > 0 || completing}
         >
           {isCompleted ? 'Back to workouts' : 'Exit workout'}
         </button>
@@ -306,7 +382,7 @@ function WorkoutSession() {
           <button
             className="primary-action"
             onClick={handleCompleteWorkout}
-            disabled={completing}
+            disabled={completing || savingIds.size > 0}
           >
             {completing ? 'Completing...' : 'Complete workout'}
           </button>

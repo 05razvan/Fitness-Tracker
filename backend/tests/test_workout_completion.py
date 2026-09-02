@@ -7,8 +7,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.database import Base
-from app.db.models.workout import Workout
-from app.routers.workouts import complete_workout
+from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
+from app.routers.workouts import complete_workout, update_workout_set
+from app.schemas.workout import WorkoutSetUpdate
 
 
 @pytest.fixture
@@ -51,3 +52,35 @@ def test_complete_missing_workout_returns_not_found(db_session):
 
     assert error.value.status_code == 404
     assert error.value.detail == "Workout not found"
+
+
+def test_update_set_can_clear_recorded_values(db_session):
+    workout = Workout(user_id=1, name="Clear set test")
+    db_session.add(workout)
+    db_session.flush()
+    workout_exercise = WorkoutExercise(
+        workout_id=workout.id,
+        exercise_id=1,
+        order=1,
+    )
+    db_session.add(workout_exercise)
+    db_session.flush()
+    workout_set = WorkoutSet(
+        workout_exercise_id=workout_exercise.id,
+        set_number=1,
+        weight=50,
+        reps=8,
+        notes="Working set",
+    )
+    db_session.add(workout_set)
+    db_session.commit()
+
+    response = update_workout_set(
+        workout_set.id,
+        WorkoutSetUpdate(weight=None, reps=None, notes=None),
+        db_session,
+    )
+
+    assert response.weight is None
+    assert response.reps == 0
+    assert response.notes is None

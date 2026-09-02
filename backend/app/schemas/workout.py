@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class WorkoutSetCreate(BaseModel):
@@ -59,6 +59,6 @@ class WorkoutResponse(BaseModel):
 
 
 class WorkoutSetUpdate(BaseModel):
-    weight: float | None = None
-    reps: int | None = None
+    weight: float | None = Field(default=None, ge=0)
+    reps: int | None = Field(default=None, ge=0)
     notes: str | None = None
