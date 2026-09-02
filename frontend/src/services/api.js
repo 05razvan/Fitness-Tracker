@@ -57,4 +57,13 @@ export const updateWorkoutSet = async (setId, data) => {
   return response.data
 }
 
+export const addWorkoutSet = async (workoutExerciseId) => {
+  const response = await api.post(`/workouts/exercises/${workoutExerciseId}/sets`)
+  return response.data
+}
+
+export const deleteWorkoutSet = async (setId) => {
+  await api.delete(`/workouts/sets/${setId}`)
+}
+
 export default api

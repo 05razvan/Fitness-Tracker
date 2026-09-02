@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  addWorkoutSet,
   completeWorkout,
+  deleteWorkoutSet,
   getWorkout,
   updateWorkoutSet,
 } from '../services/api'
@@ -15,6 +17,7 @@ function WorkoutSession() {
   const [loading, setLoading] = useState(true)
   const [savingIds, setSavingIds] = useState(new Set())
   const [dirtyIds, setDirtyIds] = useState(new Set())
+  const [modifyingExerciseIds, setModifyingExerciseIds] = useState(new Set())
   const [completing, setCompleting] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [saveError, setSaveError] = useState('')
@@ -192,6 +195,76 @@ function WorkoutSession() {
     }
   }
 
+  const addSet = async (workoutExerciseId) => {
+    setModifyingExerciseIds((current) => new Set(current).add(workoutExerciseId))
+    setSaveError('')
+
+    try {
+      const newSet = await addWorkoutSet(workoutExerciseId)
+      setWorkout((current) => ({
+        ...current,
+        exercises: current.exercises.map((exercise) =>
+          exercise.id === workoutExerciseId
+            ? { ...exercise, sets: [...exercise.sets, newSet] }
+            : exercise,
+        ),
+      }))
+    } catch (err) {
+      console.error(err)
+      setSaveError('Unable to add a set. Please try again.')
+    } finally {
+      setModifyingExerciseIds((current) => {
+        const next = new Set(current)
+        next.delete(workoutExerciseId)
+        return next
+      })
+    }
+  }
+
+  const removeSet = async (exercise, set) => {
+    const hasPerformance = set.weight > 0 || set.reps > 0
+    if (hasPerformance && !window.confirm(`Remove set ${set.set_number} and its recorded values?`)) {
+      return
+    }
+
+    setModifyingExerciseIds((current) => new Set(current).add(exercise.id))
+    setSaveError('')
+
+    try {
+      await deleteWorkoutSet(set.id)
+      setDirtyIds((current) => {
+        const next = new Set(current)
+        next.delete(set.id)
+        return next
+      })
+      setWorkout((current) => ({
+        ...current,
+        exercises: current.exercises.map((currentExercise) =>
+          currentExercise.id === exercise.id
+            ? {
+                ...currentExercise,
+                sets: currentExercise.sets
+                  .filter((currentSet) => currentSet.id !== set.id)
+                  .map((currentSet, index) => ({
+                    ...currentSet,
+                    set_number: index + 1,
+                  })),
+              }
+            : currentExercise,
+        ),
+      }))
+    } catch (err) {
+      console.error(err)
+      setSaveError('Unable to remove this set. Please try again.')
+    } finally {
+      setModifyingExerciseIds((current) => {
+        const next = new Set(current)
+        next.delete(exercise.id)
+        return next
+      })
+    }
+  }
+
   if (loading) {
     return (
       <main className="session-page">
@@ -271,7 +344,7 @@ function WorkoutSession() {
               <span>SET</span>
               <span>WEIGHT</span>
               <span>REPS</span>
-              <span />
+              <span>ACTION</span>
             </div>
 
             <div className="sets-list">
@@ -335,24 +408,46 @@ function WorkoutSession() {
                         {complete ? '✓' : '—'}
                       </span>
                     ) : (
-                      <button
-                        className="save-set"
-                        onClick={() => saveSet(set)}
-                        disabled={savingIds.has(set.id) || !dirtyIds.has(set.id)}
-                      >
-                        {savingIds.has(set.id)
-                          ? 'Saving'
-                          : dirtyIds.has(set.id)
-                            ? 'Save'
-                            : complete
-                              ? '✓'
-                              : '—'}
-                      </button>
+                      <div className="set-actions">
+                        <button
+                          className="save-set"
+                          onClick={() => saveSet(set)}
+                          disabled={savingIds.has(set.id) || !dirtyIds.has(set.id)}
+                        >
+                          {savingIds.has(set.id)
+                            ? 'Saving'
+                            : dirtyIds.has(set.id)
+                              ? 'Save'
+                              : complete
+                                ? '✓'
+                                : '—'}
+                        </button>
+                        <button
+                          type="button"
+                          className="remove-set"
+                          aria-label={`Remove set ${set.set_number}`}
+                          onClick={() => removeSet(exercise, set)}
+                          disabled={modifyingExerciseIds.has(exercise.id) || savingIds.has(set.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
                     )}
                   </div>
                 )
               })}
             </div>
+
+            {!isCompleted && (
+              <button
+                type="button"
+                className="add-set"
+                onClick={() => addSet(exercise.id)}
+                disabled={modifyingExerciseIds.has(exercise.id)}
+              >
+                {modifyingExerciseIds.has(exercise.id) ? 'Updating sets...' : '+ Add set'}
+              </button>
+            )}
           </article>
         ))}
       </section>

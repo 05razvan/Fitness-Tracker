@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -47,6 +47,21 @@ def get_workout_with_relationships(
         )
 
     workout.exercises = workout_exercises
+
+    return workout
+
+
+def ensure_workout_is_active(workout_id: int, db: Session):
+    workout = db.query(Workout).filter(Workout.id == workout_id).first()
+
+    if not workout:
+        raise HTTPException(status_code=404, detail="Workout not found")
+
+    if workout.completed_at is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Completed workouts cannot be changed",
+        )
 
     return workout
 
@@ -204,6 +219,13 @@ def update_workout_set(
             detail="Workout set not found",
         )
 
+    workout_exercise = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.id == workout_set.workout_exercise_id)
+        .first()
+    )
+    ensure_workout_is_active(workout_exercise.workout_id, db)
+
     if "weight" in set_data.model_fields_set:
         workout_set.weight = set_data.weight
 
@@ -217,3 +239,76 @@ def update_workout_set(
     db.refresh(workout_set)
 
     return workout_set
+
+
+@router.post(
+    "/exercises/{workout_exercise_id}/sets",
+    response_model=WorkoutSetResponse,
+    status_code=201,
+)
+def add_workout_set(
+    workout_exercise_id: int,
+    db: Session = Depends(get_db),
+):
+    workout_exercise = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.id == workout_exercise_id)
+        .first()
+    )
+
+    if not workout_exercise:
+        raise HTTPException(
+            status_code=404,
+            detail="Workout exercise not found",
+        )
+
+    ensure_workout_is_active(workout_exercise.workout_id, db)
+    latest_set = (
+        db.query(WorkoutSet)
+        .filter(WorkoutSet.workout_exercise_id == workout_exercise_id)
+        .order_by(WorkoutSet.set_number.desc())
+        .first()
+    )
+    workout_set = WorkoutSet(
+        workout_exercise_id=workout_exercise_id,
+        set_number=(latest_set.set_number + 1) if latest_set else 1,
+        weight=None,
+        reps=0,
+    )
+    db.add(workout_set)
+    db.commit()
+    db.refresh(workout_set)
+    return workout_set
+
+
+@router.delete("/sets/{set_id}", status_code=204)
+def delete_workout_set(
+    set_id: int,
+    db: Session = Depends(get_db),
+):
+    workout_set = db.query(WorkoutSet).filter(WorkoutSet.id == set_id).first()
+
+    if not workout_set:
+        raise HTTPException(status_code=404, detail="Workout set not found")
+
+    workout_exercise = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.id == workout_set.workout_exercise_id)
+        .first()
+    )
+    ensure_workout_is_active(workout_exercise.workout_id, db)
+    workout_exercise_id = workout_set.workout_exercise_id
+    db.delete(workout_set)
+    db.flush()
+
+    remaining_sets = (
+        db.query(WorkoutSet)
+        .filter(WorkoutSet.workout_exercise_id == workout_exercise_id)
+        .order_by(WorkoutSet.set_number)
+        .all()
+    )
+    for set_number, remaining_set in enumerate(remaining_sets, start=1):
+        remaining_set.set_number = set_number
+
+    db.commit()
+    return Response(status_code=204)

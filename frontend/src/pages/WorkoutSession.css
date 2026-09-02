@@ -125,7 +125,7 @@
 .sets-header,
 .set-row {
   display: grid;
-  grid-template-columns: 70px 1fr 1fr 72px;
+  grid-template-columns: 70px 1fr 1fr 112px;
   gap: 16px;
   align-items: center;
 }
@@ -230,6 +230,50 @@
 .save-set:disabled {
   cursor: wait;
   opacity: 0.5;
+}
+
+.set-actions {
+  display: grid;
+  grid-template-columns: 1fr 36px;
+  gap: 6px;
+}
+
+.remove-set {
+  min-height: 44px;
+  border: 1px solid rgba(248, 113, 113, 0.18);
+  border-radius: 8px;
+  background: transparent;
+  color: #fca5a5;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.remove-set:hover:not(:disabled) {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.07);
+}
+
+.remove-set:disabled,
+.add-set:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.add-set {
+  min-height: 42px;
+  margin-top: 14px;
+  padding: 0 16px;
+  border: 1px dashed rgba(245, 158, 11, 0.28);
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.04);
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+}
+
+.add-set:hover:not(:disabled) {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.08);
 }
 
 .set-locked {
@@ -369,7 +413,7 @@
     padding: 14px 4px;
   }
 
-  .set-row .save-set {
+  .set-row .set-actions {
     grid-column: 2 / -1;
     width: 100%;
     margin-top: 2px;
