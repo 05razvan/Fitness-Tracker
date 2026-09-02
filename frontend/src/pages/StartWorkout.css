@@ -126,10 +126,43 @@
 .preset-exercises small { flex: 0 0 auto; color: var(--muted-foreground); font-family: 'JetBrains Mono', monospace; }
 .preset-more { margin: -10px 0 20px; color: var(--muted-foreground); font-size: 0.72rem; }
 
+.preset-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: auto 0 10px;
+}
+
+.preset-card-actions button {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.preset-card-actions button:hover:not(:disabled) {
+  border-color: var(--border-hover);
+  color: var(--foreground);
+}
+
+.preset-card-actions .delete-preset-button {
+  border-color: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+}
+
+.preset-card-actions button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
 .start-preset-button {
   width: 100%;
   min-height: 46px;
-  margin-top: auto;
+  margin-top: 0;
   padding: 0 18px;
   border: 0;
   border-radius: var(--radius-md);

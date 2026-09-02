@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import {
   createWorkoutPreset,
+  deleteWorkoutPreset,
   getExercises,
   getWorkoutPresets,
   startWorkoutFromPreset,
+  updateWorkoutPreset,
 } from '../services/api'
 import PresetEditor from '../components/PresetEditor'
 
@@ -19,7 +21,9 @@ function StartWorkout() {
   const [startingId, setStartingId] = useState(null)
   const [error, setError] = useState('')
   const [showEditor, setShowEditor] = useState(false)
+  const [editingPreset, setEditingPreset] = useState(null)
   const [savingPreset, setSavingPreset] = useState(false)
+  const [deletingPresetId, setDeletingPresetId] = useState(null)
 
   useEffect(() => {
     loadPresets()
@@ -78,6 +82,56 @@ function StartWorkout() {
     }
   }
 
+  async function handleUpdatePreset(data) {
+    try {
+      setSavingPreset(true)
+      setError('')
+      const updated = await updateWorkoutPreset(editingPreset.id, data)
+      setPresets((current) => current
+        .map((preset) => preset.id === updated.id ? updated : preset)
+        .sort((a, b) => a.name.localeCompare(b.name)))
+      setShowEditor(false)
+      setEditingPreset(null)
+    } catch (requestError) {
+      console.error(requestError)
+      setError('Unable to update this preset. Check the exercise targets and try again.')
+    } finally {
+      setSavingPreset(false)
+    }
+  }
+
+  async function handleDeletePreset(preset) {
+    if (!window.confirm(`Delete ${preset.name}? Existing workout history will not be affected.`)) {
+      return
+    }
+
+    try {
+      setDeletingPresetId(preset.id)
+      setError('')
+      await deleteWorkoutPreset(preset.id)
+      setPresets((current) => current.filter((item) => item.id !== preset.id))
+      if (editingPreset?.id === preset.id) {
+        setShowEditor(false)
+        setEditingPreset(null)
+      }
+    } catch (requestError) {
+      console.error(requestError)
+      setError(`Unable to delete ${preset.name}.`)
+    } finally {
+      setDeletingPresetId(null)
+    }
+  }
+
+  function openCreateEditor() {
+    setEditingPreset(null)
+    setShowEditor(true)
+  }
+
+  function closeEditor() {
+    setShowEditor(false)
+    setEditingPreset(null)
+  }
+
   return (
     <main className="page start-workout-page">
       <Link to="/workouts" className="start-back-link">
@@ -90,14 +144,16 @@ function StartWorkout() {
           <h1>Start a workout</h1>
           <p>Choose a training preset or build a new structure for your next session.</p>
         </div>
-        <button type="button" className="new-preset-button" onClick={() => setShowEditor(true)}>+ New preset</button>
+        <button type="button" className="new-preset-button" onClick={openCreateEditor}>+ New preset</button>
       </header>
 
       {showEditor && (
         <PresetEditor
+          key={editingPreset?.id || 'new'}
           exercises={exercises}
-          onSave={handleCreatePreset}
-          onCancel={() => setShowEditor(false)}
+          initialPreset={editingPreset}
+          onSave={editingPreset ? handleUpdatePreset : handleCreatePreset}
+          onCancel={closeEditor}
           saving={savingPreset}
         />
       )}
@@ -123,7 +179,7 @@ function StartWorkout() {
           <span className="start-empty-mark">+</span>
           <h2>No presets available</h2>
           <p>Create your first reusable training structure to start a session.</p>
-          <button type="button" className="secondary-button" onClick={() => setShowEditor(true)}>Create preset</button>
+          <button type="button" className="secondary-button" onClick={openCreateEditor}>Create preset</button>
         </div>
       )}
 
@@ -163,6 +219,26 @@ function StartWorkout() {
                 {preset.exercises.length > 4 && (
                   <p className="preset-more">+{preset.exercises.length - 4} more exercises</p>
                 )}
+
+                <div className="preset-card-actions">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingPreset(preset)
+                      setShowEditor(true)
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="delete-preset-button"
+                    onClick={() => handleDeletePreset(preset)}
+                    disabled={deletingPresetId === preset.id}
+                  >
+                    {deletingPresetId === preset.id ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
 
                 <button
                   type="button"

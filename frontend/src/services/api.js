@@ -46,6 +46,15 @@ export const createWorkoutPreset = async (data) => {
   return response.data
 }
 
+export const updateWorkoutPreset = async (id, data) => {
+  const response = await api.put(`/presets/${id}`, data)
+  return response.data
+}
+
+export const deleteWorkoutPreset = async (id) => {
+  await api.delete(`/presets/${id}`)
+}
+
 export const startWorkoutFromPreset = async (presetId) => {
   const response = await api.post(`/presets/${presetId}/start`)
   return response.data
