@@ -5,6 +5,7 @@ import {
   completeWorkout,
   deleteWorkoutSet,
   getWorkout,
+  updateWorkout,
   updateWorkoutSet,
 } from '../services/api'
 import './WorkoutSession.css'
@@ -20,6 +21,8 @@ function WorkoutSession() {
   const [loading, setLoading] = useState(true)
   const [savingIds, setSavingIds] = useState(new Set())
   const [dirtyIds, setDirtyIds] = useState(new Set())
+  const [dirtyMetadata, setDirtyMetadata] = useState(new Set())
+  const [savingMetadata, setSavingMetadata] = useState(new Set())
   const [modifyingExerciseIds, setModifyingExerciseIds] = useState(new Set())
   const [completing, setCompleting] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -64,7 +67,7 @@ function WorkoutSession() {
     allSets.length > 0 ? Math.round((completedSets / allSets.length) * 100) : 0
 
   useEffect(() => {
-    if (dirtyIds.size === 0) return undefined
+    if (dirtyIds.size === 0 && dirtyMetadata.size === 0) return undefined
 
     const warnBeforeUnload = (event) => {
       event.preventDefault()
@@ -73,7 +76,47 @@ function WorkoutSession() {
 
     window.addEventListener('beforeunload', warnBeforeUnload)
     return () => window.removeEventListener('beforeunload', warnBeforeUnload)
-  }, [dirtyIds])
+  }, [dirtyIds, dirtyMetadata])
+
+  const handleWorkoutFieldChange = (field, value) => {
+    if (isCompleted) return
+    setWorkout((current) => ({ ...current, [field]: value }))
+    setDirtyMetadata((current) => new Set(current).add(field))
+    setSaveError('')
+  }
+
+  const saveWorkoutField = async (field) => {
+    if (isCompleted || savingMetadata.has(field) || !dirtyMetadata.has(field)) {
+      return true
+    }
+
+    const rawValue = workout[field]
+    const value = field === 'body_weight'
+      ? rawValue === '' || rawValue == null ? null : Number(rawValue)
+      : rawValue === '' ? null : rawValue
+    setSavingMetadata((current) => new Set(current).add(field))
+
+    try {
+      await updateWorkout(workout.id, { [field]: value })
+      setDirtyMetadata((current) => {
+        const next = new Set(current)
+        next.delete(field)
+        return next
+      })
+      setSaveError('')
+      return true
+    } catch (err) {
+      console.error(err)
+      setSaveError('Unable to save session details. Please try again.')
+      return false
+    } finally {
+      setSavingMetadata((current) => {
+        const next = new Set(current)
+        next.delete(field)
+        return next
+      })
+    }
+  }
 
   const handleSetChange = async (setId, field, value) => {
     if (isCompleted) return
@@ -144,15 +187,23 @@ function WorkoutSession() {
     return saveResults.every(Boolean)
   }
 
+  const savePendingMetadata = async () => {
+    const results = await Promise.all([...dirtyMetadata].map(saveWorkoutField))
+    return results.every(Boolean)
+  }
+
   const handleExitWorkout = async () => {
-    if (isCompleted || dirtyIds.size === 0) {
+    if (isCompleted || (dirtyIds.size === 0 && dirtyMetadata.size === 0)) {
       navigate('/workouts')
       return
     }
 
-    const saved = await savePendingSets()
+    const [setsSaved, metadataSaved] = await Promise.all([
+      savePendingSets(),
+      savePendingMetadata(),
+    ])
 
-    if (saved) {
+    if (setsSaved && metadataSaved) {
       navigate('/workouts')
     }
   }
@@ -171,9 +222,12 @@ function WorkoutSession() {
     try {
       setCompleting(true)
       setCompletionError('')
-      const saved = await savePendingSets()
+      const [setsSaved, metadataSaved] = await Promise.all([
+        savePendingSets(),
+        savePendingMetadata(),
+      ])
 
-      if (!saved) {
+      if (!setsSaved || !metadataSaved) {
         setCompletionError(
           'The workout was not completed because some sets could not be saved.',
         )
@@ -326,6 +380,45 @@ function WorkoutSession() {
         </div>
       </header>
 
+      <section className="session-details" aria-label="Session details">
+        <label>
+          <span>BODY WEIGHT</span>
+          <div className="body-weight-input">
+            <input
+              type="number"
+              min="1"
+              max="500"
+              step="0.1"
+              value={workout.body_weight ?? ''}
+              placeholder="Optional"
+              onChange={(event) => handleWorkoutFieldChange('body_weight', event.target.value)}
+              onBlur={() => saveWorkoutField('body_weight')}
+              disabled={isCompleted}
+            />
+            <small>kg</small>
+          </div>
+        </label>
+        <label className="session-notes-field">
+          <span>SESSION NOTES</span>
+          <textarea
+            value={workout.notes ?? ''}
+            placeholder="Energy, recovery, technique cues..."
+            maxLength={2000}
+            rows={2}
+            onChange={(event) => handleWorkoutFieldChange('notes', event.target.value)}
+            onBlur={() => saveWorkoutField('notes')}
+            disabled={isCompleted}
+          />
+        </label>
+        <p className="metadata-save-status">
+          {savingMetadata.size > 0
+            ? 'Saving details...'
+            : dirtyMetadata.size > 0
+              ? 'Unsaved changes'
+              : 'Details save automatically'}
+        </p>
+      </section>
+
       <section className="session-content">
         {workout.exercises.map((exercise, exerciseIndex) => (
           <article className="exercise-card" key={exercise.id}>
@@ -477,7 +570,7 @@ function WorkoutSession() {
         <button
           className="secondary-action"
           onClick={handleExitWorkout}
-          disabled={savingIds.size > 0 || completing}
+          disabled={savingIds.size > 0 || savingMetadata.size > 0 || completing}
         >
           {isCompleted ? 'Back to workouts' : 'Exit workout'}
         </button>
@@ -486,7 +579,7 @@ function WorkoutSession() {
           <button
             className="primary-action"
             onClick={handleCompleteWorkout}
-            disabled={completing || savingIds.size > 0}
+            disabled={completing || savingIds.size > 0 || savingMetadata.size > 0}
           >
             {completing ? 'Completing...' : 'Complete workout'}
           </button>

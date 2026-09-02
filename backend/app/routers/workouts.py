@@ -6,7 +6,13 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
-from app.schemas.workout import WorkoutCreate, WorkoutResponse, WorkoutSetResponse, WorkoutSetUpdate
+from app.schemas.workout import (
+    WorkoutCreate,
+    WorkoutResponse,
+    WorkoutSetResponse,
+    WorkoutSetUpdate,
+    WorkoutUpdate,
+)
 
 
 router = APIRouter(
@@ -202,6 +208,27 @@ def get_workout(
         )
 
     return workout
+
+
+@router.patch(
+    "/{workout_id}",
+    response_model=WorkoutResponse,
+)
+def update_workout(
+    workout_id: int,
+    workout_data: WorkoutUpdate,
+    db: Session = Depends(get_db),
+):
+    workout = ensure_workout_is_active(workout_id, db)
+
+    if "body_weight" in workout_data.model_fields_set:
+        workout.body_weight = workout_data.body_weight
+
+    if "notes" in workout_data.model_fields_set:
+        workout.notes = workout_data.notes
+
+    db.commit()
+    return get_workout_with_relationships(workout.id, db)
 
 
 @router.patch(

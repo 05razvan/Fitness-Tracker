@@ -60,6 +60,11 @@ class WorkoutResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class WorkoutUpdate(BaseModel):
+    body_weight: float | None = Field(default=None, gt=0, le=500)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
 class WorkoutSetUpdate(BaseModel):
     weight: float | None = Field(default=None, ge=0)
     reps: int | None = Field(default=None, ge=0)

@@ -17,6 +17,11 @@ export const getWorkout = async (id) => {
   return response.data
 }
 
+export const updateWorkout = async (id, data) => {
+  const response = await api.patch(`/workouts/${id}`, data)
+  return response.data
+}
+
 export const completeWorkout = async (id) => {
   const response = await api.patch(`/workouts/${id}/complete`)
   return response.data

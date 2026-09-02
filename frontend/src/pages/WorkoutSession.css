@@ -53,6 +53,75 @@
   width: 220px;
 }
 
+.session-details {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.35fr) 1fr auto;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 24px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(26, 26, 36, 0.42);
+}
+
+.session-details label > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted-foreground);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.09em;
+}
+
+.session-details input,
+.session-details textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(10, 10, 15, 0.45);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.session-details input {
+  height: 44px;
+  padding: 0 42px 0 12px;
+}
+
+.session-details textarea {
+  min-height: 44px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.session-details input:focus,
+.session-details textarea:focus {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.12);
+}
+
+.body-weight-input {
+  position: relative;
+}
+
+.body-weight-input small {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+}
+
+.metadata-save-status {
+  margin: 0 0 12px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .progress-label {
   display: flex;
   justify-content: space-between;
@@ -412,6 +481,14 @@
 
   .session-progress {
     width: 100%;
+  }
+
+  .session-details {
+    grid-template-columns: 1fr;
+  }
+
+  .metadata-save-status {
+    margin: 0;
   }
 
   .exercise-card {

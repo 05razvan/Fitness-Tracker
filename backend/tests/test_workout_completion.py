@@ -14,9 +14,10 @@ from app.routers.workouts import (
     complete_workout,
     delete_workout_set,
     get_workout_with_relationships,
+    update_workout,
     update_workout_set,
 )
-from app.schemas.workout import WorkoutResponse, WorkoutSetUpdate
+from app.schemas.workout import WorkoutResponse, WorkoutSetUpdate, WorkoutUpdate
 
 
 @pytest.fixture
@@ -204,3 +205,46 @@ def test_workout_includes_exercise_name_and_previous_performance(db_session):
     assert response.exercises[0].exercise_name == "Barbell Bench Press"
     assert response.exercises[0].previous_sets[0].weight == 60
     assert response.exercises[0].previous_sets[0].reps == 8
+
+
+def test_active_workout_details_can_be_updated_and_cleared(db_session):
+    workout = Workout(user_id=1, name="Session details")
+    db_session.add(workout)
+    db_session.commit()
+
+    updated = update_workout(
+        workout.id,
+        WorkoutUpdate(body_weight=82.5, notes="Felt well recovered"),
+        db_session,
+    )
+
+    assert updated.body_weight == 82.5
+    assert updated.notes == "Felt well recovered"
+
+    cleared = update_workout(
+        workout.id,
+        WorkoutUpdate(body_weight=None, notes=None),
+        db_session,
+    )
+
+    assert cleared.body_weight is None
+    assert cleared.notes is None
+
+
+def test_completed_workout_details_cannot_be_updated(db_session):
+    workout = Workout(
+        user_id=1,
+        name="Completed session details",
+        completed_at=datetime(2026, 8, 27, 11, 0),
+    )
+    db_session.add(workout)
+    db_session.commit()
+
+    with pytest.raises(HTTPException) as error:
+        update_workout(
+            workout.id,
+            WorkoutUpdate(notes="Changed later"),
+            db_session,
+        )
+
+    assert error.value.status_code == 409
