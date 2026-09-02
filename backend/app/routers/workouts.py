@@ -26,6 +26,7 @@ router = APIRouter(
 def get_workout_with_relationships(
     workout_id: int,
     db: Session,
+    include_previous_performance: bool = True,
 ):
     workout = (
         db.query(Workout)
@@ -61,32 +62,35 @@ def get_workout_with_relationships(
         workout_exercise.exercise_name = (
             exercise.name if exercise else f"Exercise {workout_exercise.exercise_id}"
         )
-        previous_workout_exercise = (
-            db.query(WorkoutExercise)
-            .join(Workout, Workout.id == WorkoutExercise.workout_id)
-            .filter(
-                WorkoutExercise.exercise_id == workout_exercise.exercise_id,
-                WorkoutExercise.workout_id != workout.id,
-                Workout.user_id == workout.user_id,
-                Workout.completed_at.isnot(None),
-                Workout.started_at < workout.started_at,
+        workout_exercise.previous_sets = []
+
+        if include_previous_performance:
+            previous_workout_exercise = (
+                db.query(WorkoutExercise)
+                .join(Workout, Workout.id == WorkoutExercise.workout_id)
+                .filter(
+                    WorkoutExercise.exercise_id == workout_exercise.exercise_id,
+                    WorkoutExercise.workout_id != workout.id,
+                    Workout.user_id == workout.user_id,
+                    Workout.completed_at.isnot(None),
+                    Workout.started_at < workout.started_at,
+                )
+                .order_by(Workout.started_at.desc())
+                .first()
             )
-            .order_by(Workout.started_at.desc())
-            .first()
-        )
-        workout_exercise.previous_sets = (
-            db.query(WorkoutSet)
-            .filter(
-                WorkoutSet.workout_exercise_id == previous_workout_exercise.id,
-                WorkoutSet.weight.isnot(None),
-                WorkoutSet.weight > 0,
-                WorkoutSet.reps > 0,
+            workout_exercise.previous_sets = (
+                db.query(WorkoutSet)
+                .filter(
+                    WorkoutSet.workout_exercise_id == previous_workout_exercise.id,
+                    WorkoutSet.weight.isnot(None),
+                    WorkoutSet.weight > 0,
+                    WorkoutSet.reps > 0,
+                )
+                .order_by(WorkoutSet.set_number)
+                .all()
+                if previous_workout_exercise
+                else []
             )
-            .order_by(WorkoutSet.set_number)
-            .all()
-            if previous_workout_exercise
-            else []
-        )
 
     workout.exercises = workout_exercises
 
@@ -188,7 +192,11 @@ def get_workouts(
     )
 
     return [
-        get_workout_with_relationships(workout.id, db)
+        get_workout_with_relationships(
+            workout.id,
+            db,
+            include_previous_performance=False,
+        )
         for workout in workouts
     ]
 

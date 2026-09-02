@@ -215,6 +215,15 @@ def test_workout_includes_exercise_name_and_previous_performance(db_session):
     assert response.exercises[0].previous_sets[0].weight == 60
     assert response.exercises[0].previous_sets[0].reps == 8
 
+    list_workout = get_workout_with_relationships(
+        current_workout.id,
+        db_session,
+        include_previous_performance=False,
+    )
+    list_response = WorkoutResponse.model_validate(list_workout)
+
+    assert list_response.exercises[0].previous_sets == []
+
 
 def test_active_workout_details_can_be_updated_and_cleared(db_session):
     workout = Workout(user_id=1, name="Session details")
