@@ -8,6 +8,8 @@ from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
 from app.schemas.workout import (
     WorkoutCreate,
+    WorkoutExerciseAdd,
+    WorkoutExerciseResponse,
     WorkoutResponse,
     WorkoutSetResponse,
     WorkoutSetUpdate,
@@ -229,6 +231,108 @@ def update_workout(
 
     db.commit()
     return get_workout_with_relationships(workout.id, db)
+
+
+@router.post(
+    "/{workout_id}/exercises",
+    response_model=WorkoutExerciseResponse,
+    status_code=201,
+)
+def add_workout_exercise(
+    workout_id: int,
+    exercise_data: WorkoutExerciseAdd,
+    db: Session = Depends(get_db),
+):
+    workout = ensure_workout_is_active(workout_id, db)
+    exercise = (
+        db.query(Exercise)
+        .filter(Exercise.id == exercise_data.exercise_id)
+        .first()
+    )
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    duplicate = (
+        db.query(WorkoutExercise)
+        .filter(
+            WorkoutExercise.workout_id == workout_id,
+            WorkoutExercise.exercise_id == exercise_data.exercise_id,
+        )
+        .first()
+    )
+    if duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail="Exercise is already in this workout",
+        )
+
+    latest_exercise = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.workout_id == workout_id)
+        .order_by(WorkoutExercise.order.desc())
+        .first()
+    )
+    workout_exercise = WorkoutExercise(
+        workout_id=workout.id,
+        exercise_id=exercise.id,
+        order=(latest_exercise.order + 1) if latest_exercise else 1,
+    )
+    db.add(workout_exercise)
+    db.flush()
+
+    for set_number in range(1, exercise_data.target_sets + 1):
+        db.add(
+            WorkoutSet(
+                workout_exercise_id=workout_exercise.id,
+                set_number=set_number,
+                weight=None,
+                reps=0,
+            )
+        )
+
+    db.commit()
+    hydrated_workout = get_workout_with_relationships(workout.id, db)
+    return next(
+        item for item in hydrated_workout.exercises if item.id == workout_exercise.id
+    )
+
+
+@router.delete("/exercises/{workout_exercise_id}", status_code=204)
+def delete_workout_exercise(
+    workout_exercise_id: int,
+    db: Session = Depends(get_db),
+):
+    workout_exercise = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.id == workout_exercise_id)
+        .first()
+    )
+
+    if not workout_exercise:
+        raise HTTPException(status_code=404, detail="Workout exercise not found")
+
+    ensure_workout_is_active(workout_exercise.workout_id, db)
+    workout_id = workout_exercise.workout_id
+    (
+        db.query(WorkoutSet)
+        .filter(WorkoutSet.workout_exercise_id == workout_exercise.id)
+        .delete(synchronize_session=False)
+    )
+    db.delete(workout_exercise)
+    db.flush()
+
+    remaining_exercises = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.workout_id == workout_id)
+        .order_by(WorkoutExercise.order)
+        .all()
+    )
+    for order, remaining_exercise in enumerate(remaining_exercises, start=1):
+        remaining_exercise.order = order
+
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.patch(

@@ -17,6 +17,11 @@ class WorkoutExerciseCreate(BaseModel):
     sets: list[WorkoutSetCreate] = []
 
 
+class WorkoutExerciseAdd(BaseModel):
+    exercise_id: int
+    target_sets: int = Field(default=3, ge=1, le=10)
+
+
 class WorkoutCreate(BaseModel):
     name: str | None = None
     started_at: datetime | None = None

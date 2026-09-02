@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  addWorkoutExercise,
   addWorkoutSet,
   completeWorkout,
+  deleteWorkoutExercise,
   deleteWorkoutSet,
+  getExercises,
   getWorkout,
   updateWorkout,
   updateWorkoutSet,
@@ -24,6 +27,7 @@ function WorkoutSession() {
   const navigate = useNavigate()
 
   const [workout, setWorkout] = useState(null)
+  const [exerciseLibrary, setExerciseLibrary] = useState([])
   const [loading, setLoading] = useState(true)
   const [savingIds, setSavingIds] = useState(new Set())
   const [dirtyIds, setDirtyIds] = useState(new Set())
@@ -38,13 +42,20 @@ function WorkoutSession() {
   const [restTotal, setRestTotal] = useState(90)
   const [restRemaining, setRestRemaining] = useState(0)
   const [restEndsAt, setRestEndsAt] = useState(null)
+  const [selectedExerciseId, setSelectedExerciseId] = useState('')
+  const [newExerciseSets, setNewExerciseSets] = useState(3)
+  const [modifyingWorkoutExercises, setModifyingWorkoutExercises] = useState(false)
 
   useEffect(() => {
     const loadWorkout = async () => {
       try {
         setLoading(true)
-        const data = await getWorkout(id)
-        setWorkout(data)
+        const [workoutData, exerciseData] = await Promise.all([
+          getWorkout(id),
+          getExercises(),
+        ])
+        setWorkout(workoutData)
+        setExerciseLibrary(exerciseData)
       } catch (err) {
         console.error(err)
         setLoadError('Unable to load this workout.')
@@ -60,6 +71,13 @@ function WorkoutSession() {
     () => workout?.exercises?.flatMap((exercise) => exercise.sets || []) || [],
     [workout],
   )
+
+  const availableExercises = useMemo(() => {
+    const currentExerciseIds = new Set(
+      workout?.exercises?.map((exercise) => exercise.exercise_id) || [],
+    )
+    return exerciseLibrary.filter((exercise) => !currentExerciseIds.has(exercise.id))
+  }, [exerciseLibrary, workout])
 
   const isSetComplete = (set) =>
     set.weight !== null &&
@@ -370,6 +388,61 @@ function WorkoutSession() {
     }
   }
 
+  const handleAddExercise = async () => {
+    if (!selectedExerciseId || modifyingWorkoutExercises) return
+    setModifyingWorkoutExercises(true)
+    setSaveError('')
+
+    try {
+      const addedExercise = await addWorkoutExercise(workout.id, {
+        exercise_id: Number(selectedExerciseId),
+        target_sets: Number(newExerciseSets),
+      })
+      setWorkout((current) => ({
+        ...current,
+        exercises: [...current.exercises, addedExercise],
+      }))
+      setSelectedExerciseId('')
+    } catch (err) {
+      console.error(err)
+      setSaveError('Unable to add this exercise. Please try again.')
+    } finally {
+      setModifyingWorkoutExercises(false)
+    }
+  }
+
+  const handleRemoveExercise = async (exercise) => {
+    const hasPerformance = exercise.sets.some(isSetComplete)
+    const message = hasPerformance
+      ? `Remove ${exercise.exercise_name} and all of its recorded sets?`
+      : `Remove ${exercise.exercise_name} from this workout?`
+
+    if (!window.confirm(message)) return
+    setModifyingWorkoutExercises(true)
+    setSaveError('')
+
+    try {
+      await deleteWorkoutExercise(exercise.id)
+      const removedSetIds = new Set(exercise.sets.map((set) => set.id))
+      setDirtyIds((current) => {
+        const next = new Set(current)
+        removedSetIds.forEach((setId) => next.delete(setId))
+        return next
+      })
+      setWorkout((current) => ({
+        ...current,
+        exercises: current.exercises
+          .filter((item) => item.id !== exercise.id)
+          .map((item, index) => ({ ...item, order: index + 1 })),
+      }))
+    } catch (err) {
+      console.error(err)
+      setSaveError('Unable to remove this exercise. Please try again.')
+    } finally {
+      setModifyingWorkoutExercises(false)
+    }
+  }
+
   if (loading) {
     return (
       <main className="session-page">
@@ -525,6 +598,16 @@ function WorkoutSession() {
                   </p>
                 )}
               </div>
+              {!isCompleted && (
+                <button
+                  type="button"
+                  className="remove-exercise"
+                  onClick={() => handleRemoveExercise(exercise)}
+                  disabled={modifyingWorkoutExercises}
+                >
+                  Remove exercise
+                </button>
+              )}
             </div>
 
             <div className="sets-header">
@@ -638,6 +721,51 @@ function WorkoutSession() {
           </article>
         ))}
       </section>
+
+      {!isCompleted && (
+        <section className="add-exercise-panel" aria-label="Add exercise">
+          <div>
+            <span className="exercise-label">ADJUST SESSION</span>
+            <h2>Add another exercise</h2>
+            <p>Choose from exercises that are not already in this workout.</p>
+          </div>
+          {availableExercises.length > 0 ? (
+            <div className="add-exercise-controls">
+              <label>
+                <span>EXERCISE</span>
+                <select
+                  value={selectedExerciseId}
+                  onChange={(event) => setSelectedExerciseId(event.target.value)}
+                >
+                  <option value="">Choose an exercise</option>
+                  {availableExercises.map((exercise) => (
+                    <option value={exercise.id} key={exercise.id}>{exercise.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>SETS</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={newExerciseSets}
+                  onChange={(event) => setNewExerciseSets(event.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handleAddExercise}
+                disabled={!selectedExerciseId || modifyingWorkoutExercises}
+              >
+                {modifyingWorkoutExercises ? 'Updating...' : 'Add exercise'}
+              </button>
+            </div>
+          ) : (
+            <p className="all-exercises-added">Every exercise in the library is already included.</p>
+          )}
+        </section>
+      )}
 
       <footer className="session-footer">
         {saveError && (

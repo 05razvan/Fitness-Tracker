@@ -10,14 +10,21 @@ from app.db.database import Base
 from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
 from app.routers.workouts import (
+    add_workout_exercise,
     add_workout_set,
     complete_workout,
+    delete_workout_exercise,
     delete_workout_set,
     get_workout_with_relationships,
     update_workout,
     update_workout_set,
 )
-from app.schemas.workout import WorkoutResponse, WorkoutSetUpdate, WorkoutUpdate
+from app.schemas.workout import (
+    WorkoutExerciseAdd,
+    WorkoutResponse,
+    WorkoutSetUpdate,
+    WorkoutUpdate,
+)
 
 
 @pytest.fixture
@@ -248,3 +255,38 @@ def test_completed_workout_details_cannot_be_updated(db_session):
         )
 
     assert error.value.status_code == 409
+
+
+def test_exercise_can_be_added_and_removed_from_active_workout(db_session):
+    exercise = Exercise(
+        name="Romanian Deadlift",
+        primary_muscle="Hamstrings",
+        exercise_type="strength",
+        category="compound",
+    )
+    workout = Workout(user_id=1, name="Lower body")
+    db_session.add_all([exercise, workout])
+    db_session.commit()
+
+    added = add_workout_exercise(
+        workout.id,
+        WorkoutExerciseAdd(exercise_id=exercise.id, target_sets=2),
+        db_session,
+    )
+
+    assert added.exercise_name == "Romanian Deadlift"
+    assert len(added.sets) == 2
+
+    with pytest.raises(HTTPException) as duplicate_error:
+        add_workout_exercise(
+            workout.id,
+            WorkoutExerciseAdd(exercise_id=exercise.id, target_sets=3),
+            db_session,
+        )
+
+    assert duplicate_error.value.status_code == 409
+
+    delete_workout_exercise(added.id, db_session)
+
+    assert db_session.query(WorkoutExercise).count() == 0
+    assert db_session.query(WorkoutSet).count() == 0
