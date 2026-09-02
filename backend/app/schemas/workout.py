@@ -70,6 +70,7 @@ class WorkoutResponse(BaseModel):
 
 
 class WorkoutUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=150)
     body_weight: float | None = Field(default=None, gt=0, le=500)
     notes: str | None = Field(default=None, max_length=2000)
 

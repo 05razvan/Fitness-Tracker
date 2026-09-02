@@ -538,6 +538,18 @@ function WorkoutSession() {
 
       <section className="session-details" aria-label="Session details">
         <label>
+          <span>SESSION NAME</span>
+          <input
+            type="text"
+            value={workout.name ?? ''}
+            placeholder="Workout name"
+            maxLength={150}
+            onChange={(event) => handleWorkoutFieldChange('name', event.target.value)}
+            onBlur={() => saveWorkoutField('name')}
+            disabled={isCompleted}
+          />
+        </label>
+        <label>
           <span>BODY WEIGHT</span>
           <div className="body-weight-input">
             <input

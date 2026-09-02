@@ -55,7 +55,7 @@
 
 .session-details {
   display: grid;
-  grid-template-columns: minmax(160px, 0.35fr) 1fr auto;
+  grid-template-columns: minmax(180px, 0.55fr) minmax(140px, 0.35fr) 1fr auto;
   gap: 16px;
   align-items: end;
   margin-bottom: 24px;

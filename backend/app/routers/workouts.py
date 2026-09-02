@@ -231,6 +231,9 @@ def update_workout(
 ):
     workout = ensure_workout_is_active(workout_id, db)
 
+    if "name" in workout_data.model_fields_set:
+        workout.name = workout_data.name
+
     if "body_weight" in workout_data.model_fields_set:
         workout.body_weight = workout_data.body_weight
 

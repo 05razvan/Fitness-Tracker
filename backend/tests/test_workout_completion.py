@@ -232,10 +232,15 @@ def test_active_workout_details_can_be_updated_and_cleared(db_session):
 
     updated = update_workout(
         workout.id,
-        WorkoutUpdate(body_weight=82.5, notes="Felt well recovered"),
+        WorkoutUpdate(
+            name="Renamed session",
+            body_weight=82.5,
+            notes="Felt well recovered",
+        ),
         db_session,
     )
 
+    assert updated.name == "Renamed session"
     assert updated.body_weight == 82.5
     assert updated.notes == "Felt well recovered"
 
