@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createExercise, getExercises } from '../services/api'
+import {
+  createExercise,
+  deleteExercise,
+  getExercises,
+  updateExercise,
+} from '../services/api'
 import ExerciseEditor from '../components/ExerciseEditor'
 import './Exercises.css'
 
@@ -11,7 +16,9 @@ function Exercises() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showEditor, setShowEditor] = useState(false)
+  const [editingExercise, setEditingExercise] = useState(null)
   const [savingExercise, setSavingExercise] = useState(false)
+  const [deletingExerciseId, setDeletingExerciseId] = useState(null)
 
   useEffect(() => {
     loadExercises()
@@ -47,6 +54,54 @@ function Exercises() {
     }
   }
 
+  async function handleUpdateExercise(data) {
+    try {
+      setSavingExercise(true)
+      setError('')
+      const updated = await updateExercise(editingExercise.id, data)
+      setExercises((current) => current
+        .map((exercise) => exercise.id === updated.id ? updated : exercise)
+        .sort((a, b) => a.name.localeCompare(b.name)))
+      closeEditor()
+    } catch (err) {
+      console.error(err)
+      setError('Unable to update this exercise. The name may already exist.')
+    } finally {
+      setSavingExercise(false)
+    }
+  }
+
+  async function handleDeleteExercise(exercise) {
+    if (!window.confirm(`Delete ${exercise.name} from the exercise library?`)) return
+    setDeletingExerciseId(exercise.id)
+    setError('')
+
+    try {
+      await deleteExercise(exercise.id)
+      setExercises((current) => current.filter((item) => item.id !== exercise.id))
+      if (editingExercise?.id === exercise.id) closeEditor()
+    } catch (err) {
+      console.error(err)
+      setError(
+        err.response?.status === 409
+          ? `${exercise.name} cannot be deleted because it is used by workout history or a preset.`
+          : `Unable to delete ${exercise.name}.`,
+      )
+    } finally {
+      setDeletingExerciseId(null)
+    }
+  }
+
+  function openCreateEditor() {
+    setEditingExercise(null)
+    setShowEditor(true)
+  }
+
+  function closeEditor() {
+    setShowEditor(false)
+    setEditingExercise(null)
+  }
+
   const muscles = [
     ...new Set(
       exercises
@@ -80,14 +135,16 @@ function Exercises() {
 
         <div className="exercise-header-actions">
           <div className="exercise-count"><span>{filteredExercises.length}</span><small>exercises</small></div>
-          <button type="button" onClick={() => setShowEditor(true)}>+ Add exercise</button>
+          <button type="button" onClick={openCreateEditor}>+ Add exercise</button>
         </div>
       </div>
 
       {showEditor && (
         <ExerciseEditor
-          onSave={handleCreateExercise}
-          onCancel={() => setShowEditor(false)}
+          key={editingExercise?.id || 'new'}
+          initialExercise={editingExercise}
+          onSave={editingExercise ? handleUpdateExercise : handleCreateExercise}
+          onCancel={closeEditor}
           saving={savingExercise}
         />
       )}
@@ -148,29 +205,16 @@ function Exercises() {
       {!loading && !error && filteredExercises.length > 0 && (
         <section className="exercise-grid">
           {filteredExercises.map((exercise) => (
-            <Link
-              key={exercise.id}
-              to={`/exercises/${exercise.id}`}
-              className="exercise-card"
-            >
-              <div className="exercise-card-top">
-                <span className="exercise-number">
-                  {String(exercise.id).padStart(2, '0')}
-                </span>
-
-                <span className="arrow">↗</span>
+            <article className="exercise-card" key={exercise.id}>
+              <Link to={`/exercises/${exercise.id}`} className="exercise-card-link">
+                <div className="exercise-card-top"><span className="exercise-number">{String(exercise.id).padStart(2, '0')}</span><span className="arrow">↗</span></div>
+                <div className="exercise-card-content"><h2>{exercise.name}</h2>{exercise.primary_muscle && <span className="muscle-tag">{exercise.primary_muscle}</span>}</div>
+              </Link>
+              <div className="exercise-card-actions">
+                <button type="button" onClick={() => { setEditingExercise(exercise); setShowEditor(true) }}>Edit</button>
+                <button type="button" className="exercise-delete-button" onClick={() => handleDeleteExercise(exercise)} disabled={deletingExerciseId === exercise.id}>{deletingExerciseId === exercise.id ? 'Deleting...' : 'Delete'}</button>
               </div>
-
-              <div className="exercise-card-content">
-                <h2>{exercise.name}</h2>
-
-                {exercise.primary_muscle && (
-                  <span className="muscle-tag">
-                    {exercise.primary_muscle}
-                  </span>
-                )}
-              </div>
-            </Link>
+            </article>
           ))}
         </section>
       )}

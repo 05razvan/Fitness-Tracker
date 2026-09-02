@@ -70,6 +70,15 @@ export const createExercise = async (data) => {
   return response.data
 }
 
+export const updateExercise = async (id, data) => {
+  const response = await api.put(`/exercises/${id}`, data)
+  return response.data
+}
+
+export const deleteExercise = async (id) => {
+  await api.delete(`/exercises/${id}`)
+}
+
 export const getExerciseProgression = async (id) => {
   const response = await api.get(`/exercises/${id}/progression`)
   return response.data

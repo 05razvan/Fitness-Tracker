@@ -163,18 +163,25 @@
 }
 
 .exercise-card {
-  min-height: 180px;
+  min-height: 210px;
   padding: 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  text-decoration: none;
   background: rgba(26, 26, 36, 0.6);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   transition: all 300ms ease-out;
+}
+
+.exercise-card-link {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: inherit;
+  text-decoration: none;
 }
 
 .exercise-card:hover {
@@ -184,7 +191,7 @@
   box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
 }
 
-.exercise-card:focus-visible {
+.exercise-card-link:focus-visible {
   outline: none;
   border-color: rgba(245, 158, 11, 0.5);
   box-shadow:
@@ -212,6 +219,39 @@
 
 .exercise-card:hover .arrow {
   color: #f59e0b;
+}
+
+.exercise-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 16px;
+}
+
+.exercise-card-actions button {
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.exercise-card-actions button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #d4d4d8;
+}
+
+.exercise-card-actions .exercise-delete-button {
+  border-color: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+}
+
+.exercise-card-actions button:disabled {
+  cursor: wait;
+  opacity: 0.5;
 }
 
 .exercise-card-content h2 {
@@ -354,6 +394,6 @@
   }
 
   .exercise-card {
-    min-height: 150px;
+    min-height: 190px;
   }
 }
