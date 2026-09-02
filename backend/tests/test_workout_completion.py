@@ -17,6 +17,7 @@ from app.routers.workouts import (
     delete_workout_set,
     get_workout_with_relationships,
     reorder_workout_exercises,
+    repeat_workout,
     update_workout,
     update_workout_set,
 )
@@ -339,3 +340,41 @@ def test_workout_exercises_can_be_reordered(db_session):
 
     assert error.value.status_code == 400
     assert error.value.detail == "Exercise order must contain every workout exercise"
+
+
+def test_completed_workout_can_be_repeated_as_fresh_session(db_session):
+    source = Workout(
+        user_id=1,
+        name="Repeatable push day",
+        started_at=datetime(2026, 8, 20, 10, 0),
+        completed_at=datetime(2026, 8, 20, 11, 0),
+    )
+    db_session.add(source)
+    db_session.flush()
+    source_exercise = WorkoutExercise(
+        workout_id=source.id,
+        exercise_id=1,
+        order=1,
+    )
+    db_session.add(source_exercise)
+    db_session.flush()
+    db_session.add_all([
+        WorkoutSet(
+            workout_exercise_id=source_exercise.id,
+            set_number=set_number,
+            weight=50,
+            reps=8,
+        )
+        for set_number in range(1, 4)
+    ])
+    db_session.commit()
+
+    repeated = repeat_workout(source.id, db_session)
+
+    assert repeated.id != source.id
+    assert repeated.name == source.name
+    assert repeated.completed_at is None
+    assert repeated.body_weight is None
+    assert len(repeated.exercises) == 1
+    assert len(repeated.exercises[0].sets) == 3
+    assert all(item.weight is None and item.reps == 0 for item in repeated.exercises[0].sets)

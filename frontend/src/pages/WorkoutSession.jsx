@@ -8,6 +8,7 @@ import {
   deleteWorkoutSet,
   getExercises,
   getWorkout,
+  repeatWorkout,
   reorderWorkoutExercises,
   updateWorkout,
   updateWorkoutSet,
@@ -36,6 +37,7 @@ function WorkoutSession() {
   const [savingMetadata, setSavingMetadata] = useState(new Set())
   const [modifyingExerciseIds, setModifyingExerciseIds] = useState(new Set())
   const [completing, setCompleting] = useState(false)
+  const [repeating, setRepeating] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [saveError, setSaveError] = useState('')
   const [completionError, setCompletionError] = useState('')
@@ -316,6 +318,21 @@ function WorkoutSession() {
       )
     } finally {
       setCompleting(false)
+    }
+  }
+
+  const handleRepeatWorkout = async () => {
+    if (!isCompleted || repeating) return
+    setRepeating(true)
+    setCompletionError('')
+
+    try {
+      const repeatedWorkout = await repeatWorkout(workout.id)
+      navigate(`/workouts/${repeatedWorkout.id}`, { replace: true })
+    } catch (err) {
+      console.error(err)
+      setCompletionError('Unable to create a new session from this workout.')
+      setRepeating(false)
     }
   }
 
@@ -860,6 +877,15 @@ function WorkoutSession() {
             disabled={completing || savingIds.size > 0 || savingMetadata.size > 0}
           >
             {completing ? 'Completing...' : 'Complete workout'}
+          </button>
+        )}
+        {isCompleted && (
+          <button
+            className="primary-action"
+            onClick={handleRepeatWorkout}
+            disabled={repeating}
+          >
+            {repeating ? 'Preparing workout...' : 'Repeat workout'}
           </button>
         )}
       </footer>

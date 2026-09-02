@@ -409,6 +409,62 @@ def complete_workout(
     return get_workout_with_relationships(workout.id, db)
 
 
+@router.post(
+    "/{workout_id}/repeat",
+    response_model=WorkoutResponse,
+    status_code=201,
+)
+def repeat_workout(
+    workout_id: int,
+    db: Session = Depends(get_db),
+):
+    source_workout = get_workout_with_relationships(
+        workout_id,
+        db,
+        include_previous_performance=False,
+    )
+
+    if not source_workout:
+        raise HTTPException(status_code=404, detail="Workout not found")
+
+    if source_workout.completed_at is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Only completed workouts can be repeated",
+        )
+
+    repeated_workout = Workout(
+        user_id=source_workout.user_id,
+        name=source_workout.name,
+        started_at=utc_now(),
+    )
+    db.add(repeated_workout)
+    db.flush()
+
+    for source_exercise in source_workout.exercises:
+        repeated_exercise = WorkoutExercise(
+            workout_id=repeated_workout.id,
+            exercise_id=source_exercise.exercise_id,
+            order=source_exercise.order,
+            notes=source_exercise.notes,
+        )
+        db.add(repeated_exercise)
+        db.flush()
+
+        for set_number in range(1, len(source_exercise.sets) + 1):
+            db.add(
+                WorkoutSet(
+                    workout_exercise_id=repeated_exercise.id,
+                    set_number=set_number,
+                    weight=None,
+                    reps=0,
+                )
+            )
+
+    db.commit()
+    return get_workout_with_relationships(repeated_workout.id, db)
+
+
 @router.patch(
     "/sets/{set_id}",
     response_model=WorkoutSetResponse,

@@ -27,6 +27,11 @@ export const completeWorkout = async (id) => {
   return response.data
 }
 
+export const repeatWorkout = async (id) => {
+  const response = await api.post(`/workouts/${id}/repeat`)
+  return response.data
+}
+
 export const getWorkoutPresets = async () => {
   const response = await api.get('/presets/')
   return response.data
