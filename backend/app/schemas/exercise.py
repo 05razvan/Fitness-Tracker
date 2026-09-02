@@ -70,6 +70,14 @@ class ExerciseProgressionResponse(BaseModel):
     sessions: list[ExerciseProgressionEntry]
 
 
+class ExerciseProgressionOverview(ExerciseResponse):
+    exercise_name: str
+    personal_best_1rm: float | None = None
+    previous_best_1rm: float | None = None
+    improvement_percentage: float | None = None
+    sessions: list[ExerciseProgressionEntry]
+
+
 class PlateauAnalysis(BaseModel):
     exercise_id: int
     exercise_name: str

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
-from app.schemas.exercise import ExerciseHistoryEntry, ExerciseHistorySet, ExerciseHistoryEntryDetailed, ExerciseHistorySetDetailed, ExerciseProgressionEntry, ExerciseProgressionResponse, PlateauAnalysis,  ExerciseCreate, ExerciseResponse
+from app.schemas.exercise import ExerciseHistoryEntry, ExerciseHistorySet, ExerciseHistoryEntryDetailed, ExerciseHistorySetDetailed, ExerciseProgressionEntry, ExerciseProgressionOverview, ExerciseProgressionResponse, PlateauAnalysis,  ExerciseCreate, ExerciseResponse
 
 
 router = APIRouter(
@@ -56,6 +56,126 @@ def get_exercises(
         )
 
     return query.order_by(Exercise.name).all()
+
+
+@router.get(
+    "/progression-overview",
+    response_model=list[ExerciseProgressionOverview],
+)
+def get_progression_overview(
+    db: Session = Depends(get_db),
+):
+    user_id = 1
+    exercises = db.query(Exercise).order_by(Exercise.name).all()
+    rows = (
+        db.query(WorkoutExercise, Workout, WorkoutSet)
+        .join(Workout, Workout.id == WorkoutExercise.workout_id)
+        .outerjoin(
+            WorkoutSet,
+            WorkoutSet.workout_exercise_id == WorkoutExercise.id,
+        )
+        .filter(
+            Workout.user_id == user_id,
+            Workout.completed_at.isnot(None),
+        )
+        .order_by(Workout.started_at, WorkoutSet.set_number)
+        .all()
+    )
+    sessions_by_exercise = {}
+
+    for workout_exercise, workout, workout_set in rows:
+        exercise_sessions = sessions_by_exercise.setdefault(
+            workout_exercise.exercise_id,
+            {},
+        )
+        session = exercise_sessions.setdefault(
+            workout_exercise.id,
+            {
+                "workout_id": workout.id,
+                "date": workout.started_at,
+                "sets": [],
+            },
+        )
+        if workout_set is not None:
+            session["sets"].append(workout_set)
+
+    overview = []
+
+    for exercise in exercises:
+        session_records = list(
+            sessions_by_exercise.get(exercise.id, {}).values()
+        )
+        sessions = []
+
+        for record in session_records:
+            valid_sets = [
+                workout_set
+                for workout_set in record["sets"]
+                if workout_set.weight is not None
+                and workout_set.weight > 0
+                and workout_set.reps > 0
+            ]
+            estimates = [
+                workout_set.weight * (1 + workout_set.reps / 30)
+                for workout_set in valid_sets
+            ]
+            sessions.append(
+                {
+                    "workout_id": record["workout_id"],
+                    "date": record["date"],
+                    "total_volume": round(
+                        sum(item.weight * item.reps for item in valid_sets),
+                        2,
+                    ),
+                    "best_estimated_1rm": (
+                        round(max(estimates), 2) if estimates else None
+                    ),
+                    "best_weight": (
+                        max((item.weight for item in valid_sets), default=None)
+                    ),
+                    "best_reps": (
+                        max((item.reps for item in valid_sets), default=None)
+                    ),
+                    "is_pr": False,
+                }
+            )
+
+        personal_best = None
+        for session in sessions:
+            estimate = session["best_estimated_1rm"]
+            if estimate is not None and (
+                personal_best is None or estimate > personal_best
+            ):
+                personal_best = estimate
+                session["is_pr"] = True
+
+        estimates_before_latest = [
+            session["best_estimated_1rm"]
+            for session in sessions[:-1]
+            if session["best_estimated_1rm"] is not None
+        ]
+        previous_best = (
+            max(estimates_before_latest) if estimates_before_latest else None
+        )
+        improvement = (
+            round(((personal_best - previous_best) / previous_best) * 100, 2)
+            if personal_best is not None
+            and previous_best is not None
+            and previous_best > 0
+            else None
+        )
+        overview.append(
+            ExerciseProgressionOverview(
+                **ExerciseResponse.model_validate(exercise).model_dump(),
+                exercise_name=exercise.name,
+                personal_best_1rm=personal_best,
+                previous_best_1rm=previous_best,
+                improvement_percentage=improvement,
+                sessions=sessions,
+            )
+        )
+
+    return overview
 
 
 @router.get("/{exercise_id}", response_model=ExerciseResponse)
