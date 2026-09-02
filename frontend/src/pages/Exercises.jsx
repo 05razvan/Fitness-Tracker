@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getExercises } from '../services/api'
+import { createExercise, getExercises } from '../services/api'
+import ExerciseEditor from '../components/ExerciseEditor'
 import './Exercises.css'
 
 function Exercises() {
@@ -9,6 +10,8 @@ function Exercises() {
   const [muscle, setMuscle] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showEditor, setShowEditor] = useState(false)
+  const [savingExercise, setSavingExercise] = useState(false)
 
   useEffect(() => {
     loadExercises()
@@ -26,6 +29,21 @@ function Exercises() {
       setError('Unable to load exercises.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleCreateExercise(data) {
+    try {
+      setSavingExercise(true)
+      setError('')
+      const created = await createExercise(data)
+      setExercises((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)))
+      setShowEditor(false)
+    } catch (err) {
+      console.error(err)
+      setError('Unable to create this exercise. The name may already exist.')
+    } finally {
+      setSavingExercise(false)
     }
   }
 
@@ -60,11 +78,19 @@ function Exercises() {
           </p>
         </div>
 
-        <div className="exercise-count">
-          <span>{filteredExercises.length}</span>
-          <small>exercises</small>
+        <div className="exercise-header-actions">
+          <div className="exercise-count"><span>{filteredExercises.length}</span><small>exercises</small></div>
+          <button type="button" onClick={() => setShowEditor(true)}>+ Add exercise</button>
         </div>
       </div>
+
+      {showEditor && (
+        <ExerciseEditor
+          onSave={handleCreateExercise}
+          onCancel={() => setShowEditor(false)}
+          saving={savingExercise}
+        />
+      )}
 
       <section className="exercise-toolbar">
         <div className="search-wrapper">

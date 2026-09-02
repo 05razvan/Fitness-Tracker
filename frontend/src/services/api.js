@@ -65,6 +65,11 @@ export const getExercises = async (params = {}) => {
   return response.data
 }
 
+export const createExercise = async (data) => {
+  const response = await api.post('/exercises/', data)
+  return response.data
+}
+
 export const getExerciseProgression = async (id) => {
   const response = await api.get(`/exercises/${id}/progression`)
   return response.data
