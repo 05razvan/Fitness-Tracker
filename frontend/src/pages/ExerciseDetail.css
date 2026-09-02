@@ -427,6 +427,12 @@
   font-size: 0.7rem;
 }
 
+.progression-performance .effort-summary {
+  color: #a1a1aa;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+}
+
 .pr-badge {
   padding: 4px 7px;
   border-radius: 5px;

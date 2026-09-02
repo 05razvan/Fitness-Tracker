@@ -121,6 +121,16 @@ def get_progression_overview(
                 workout_set.weight * (1 + workout_set.reps / 30)
                 for workout_set in valid_sets
             ]
+            rpe_values = [
+                workout_set.rpe
+                for workout_set in record["sets"]
+                if workout_set.rpe is not None
+            ]
+            rir_values = [
+                workout_set.rir
+                for workout_set in record["sets"]
+                if workout_set.rir is not None
+            ]
             sessions.append(
                 {
                     "workout_id": record["workout_id"],
@@ -137,6 +147,14 @@ def get_progression_overview(
                     ),
                     "best_reps": (
                         max((item.reps for item in valid_sets), default=None)
+                    ),
+                    "average_rpe": (
+                        round(sum(rpe_values) / len(rpe_values), 1)
+                        if rpe_values else None
+                    ),
+                    "average_rir": (
+                        round(sum(rir_values) / len(rir_values), 1)
+                        if rir_values else None
                     ),
                     "is_pr": False,
                 }
@@ -375,6 +393,8 @@ def get_exercise_history(
                 ExerciseHistorySetDetailed(
                     weight=workout_set.weight,
                     reps=workout_set.reps,
+                    rpe=workout_set.rpe,
+                    rir=workout_set.rir,
                     estimated_1rm=estimated_1rm,
                     volume=volume,
                 )
@@ -444,8 +464,15 @@ def get_exercise_progression(
         best_1rm = None
         best_weight = None
         best_reps = None
+        rpe_values = []
+        rir_values = []
 
         for workout_set in sets:
+            if workout_set.rpe is not None:
+                rpe_values.append(workout_set.rpe)
+            if workout_set.rir is not None:
+                rir_values.append(workout_set.rir)
+
             if (
                 workout_set.weight is None
                 or workout_set.reps is None
@@ -483,6 +510,14 @@ def get_exercise_progression(
                 ),
                 "best_weight": best_weight,
                 "best_reps": best_reps,
+                "average_rpe": (
+                    round(sum(rpe_values) / len(rpe_values), 1)
+                    if rpe_values else None
+                ),
+                "average_rir": (
+                    round(sum(rir_values) / len(rir_values), 1)
+                    if rir_values else None
+                ),
                 "is_pr": False,
             }
         )

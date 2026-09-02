@@ -46,6 +46,8 @@ class ExerciseResponse(BaseModel):
 class ExerciseHistorySet(BaseModel):
     weight: float | None = None
     reps: int | None = None
+    rpe: float | None = None
+    rir: int | None = None
 
 
 class ExerciseHistoryEntry(BaseModel):
@@ -57,6 +59,8 @@ class ExerciseHistoryEntry(BaseModel):
 class ExerciseHistorySetDetailed(BaseModel):
     weight: float | None = None
     reps: int | None = None
+    rpe: float | None = None
+    rir: int | None = None
     estimated_1rm: float | None = None
     volume: float | None = None
 
@@ -76,6 +80,8 @@ class ExerciseProgressionEntry(BaseModel):
     best_estimated_1rm: float | None = None
     best_weight: float | None = None
     best_reps: int | None = None
+    average_rpe: float | None = None
+    average_rir: float | None = None
     is_pr: bool = False
 
 

@@ -305,6 +305,14 @@ function ExerciseDetail() {
                       <small>
                         {entry.best_estimated_1rm} kg estimated 1RM
                       </small>
+
+                      {(entry.average_rpe != null || entry.average_rir != null) && (
+                        <small className="effort-summary">
+                          {entry.average_rpe != null && `RPE ${entry.average_rpe}`}
+                          {entry.average_rpe != null && entry.average_rir != null && ' · '}
+                          {entry.average_rir != null && `${entry.average_rir} RIR`}
+                        </small>
+                      )}
                     </div>
 
                     {entry.is_pr && (

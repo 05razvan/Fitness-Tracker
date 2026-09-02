@@ -28,7 +28,16 @@ def db_session():
         Base.metadata.drop_all(bind=engine)
 
 
-def add_performance(db_session, exercise_id, *, completed, weight, started_at):
+def add_performance(
+    db_session,
+    exercise_id,
+    *,
+    completed,
+    weight,
+    started_at,
+    rpe=None,
+    rir=None,
+):
     workout = Workout(
         user_id=1,
         name="Analytics session",
@@ -50,6 +59,8 @@ def add_performance(db_session, exercise_id, *, completed, weight, started_at):
             set_number=1,
             weight=weight,
             reps=10,
+            rpe=rpe,
+            rir=rir,
         )
     )
 
@@ -75,6 +86,8 @@ def test_progression_overview_uses_only_completed_sessions(db_session):
         completed=True,
         weight=80,
         started_at=datetime(2026, 8, 1, 10, 0),
+        rpe=8.5,
+        rir=2,
     )
     add_performance(
         db_session,
@@ -92,6 +105,8 @@ def test_progression_overview_uses_only_completed_sessions(db_session):
     assert len(squat.sessions) == 1
     assert squat.sessions[0].best_weight == 80
     assert squat.sessions[0].total_volume == 800
+    assert squat.sessions[0].average_rpe == 8.5
+    assert squat.sessions[0].average_rir == 2
     assert squat.personal_best_1rm == pytest.approx(106.67)
     assert calves.sessions == []
     assert calves.personal_best_1rm is None
