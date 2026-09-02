@@ -69,6 +69,96 @@
   color: #f59e0b;
 }
 
+.weekly-load-card {
+  margin-bottom: 16px;
+  padding: 28px;
+}
+
+.weekly-load-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+.weekly-load-heading h2 {
+  margin: 8px 0 0;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+.weekly-load-stats {
+  display: flex;
+  gap: 22px;
+}
+
+.weekly-load-stats div {
+  min-width: 90px;
+}
+
+.weekly-load-stats span,
+.weekly-volume-column > span {
+  color: #71717a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+}
+
+.weekly-load-stats strong {
+  display: block;
+  margin-top: 7px;
+  color: #fafafa;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.weekly-volume-chart {
+  height: 180px;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(44px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.weekly-volume-column {
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 18px 1fr 18px;
+  gap: 6px;
+  text-align: center;
+}
+
+.weekly-volume-value {
+  overflow: hidden;
+  color: #52525b;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weekly-volume-bar-track {
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 6px 6px 2px 2px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.weekly-volume-bar {
+  width: 100%;
+  min-height: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #f59e0b, rgba(245, 158, 11, 0.3));
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.16);
+  transition: height 300ms ease-out;
+}
+
 .progress-main-grid {
   display: grid;
   grid-template-columns: 1.35fr 0.65fr;
@@ -417,6 +507,15 @@
   .selected-stats {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .weekly-load-heading {
+    flex-direction: column;
+  }
+
+  .weekly-load-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 500px) {
@@ -443,8 +542,29 @@
 
   .exercise-progress-card,
   .recent-card,
-  .analytics-card {
+  .analytics-card,
+  .weekly-load-card {
     padding: 22px;
+  }
+
+  .weekly-volume-chart {
+    gap: 5px;
+  }
+
+  .weekly-volume-value {
+    display: none;
+  }
+
+  .weekly-volume-column {
+    grid-template-rows: 1fr 18px;
+  }
+
+  .weekly-load-stats {
+    gap: 10px;
+  }
+
+  .weekly-load-stats div {
+    min-width: 0;
   }
 
   .analytics-heading {

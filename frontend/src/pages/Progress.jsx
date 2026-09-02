@@ -12,6 +12,61 @@ const formatKg = (value) =>
         maximumFractionDigits: 1,
       })} kg`
 
+function getWeekStart(value) {
+  const date = new Date(value)
+  date.setHours(0, 0, 0, 0)
+  const day = date.getDay()
+  date.setDate(date.getDate() - (day === 0 ? 6 : day - 1))
+  return date
+}
+
+function buildWeeklyVolume(sessions, weekCount = 8) {
+  const currentWeek = getWeekStart(new Date())
+  const weeks = Array.from({ length: weekCount }, (_, index) => {
+    const start = new Date(currentWeek)
+    start.setDate(start.getDate() - (weekCount - 1 - index) * 7)
+    return { start, volume: 0, workoutIds: new Set() }
+  })
+  const weekByTimestamp = new Map(
+    weeks.map((week) => [week.start.getTime(), week]),
+  )
+
+  sessions.forEach((session) => {
+    const week = weekByTimestamp.get(getWeekStart(session.date).getTime())
+    if (!week) return
+    week.volume += session.total_volume || 0
+    week.workoutIds.add(session.workout_id)
+  })
+
+  return weeks.map((week) => ({
+    start: week.start,
+    volume: week.volume,
+    workouts: week.workoutIds.size,
+  }))
+}
+
+function WeeklyVolumeChart({ weeks }) {
+  const maxVolume = Math.max(...weeks.map((week) => week.volume), 1)
+
+  return (
+    <div className="weekly-volume-chart" role="img" aria-label="Training volume over the last eight weeks">
+      {weeks.map((week) => (
+        <div className="weekly-volume-column" key={week.start.toISOString()}>
+          <div className="weekly-volume-value">{week.volume > 0 ? formatKg(week.volume) : '—'}</div>
+          <div className="weekly-volume-bar-track">
+            <div
+              className="weekly-volume-bar"
+              style={{ height: `${(week.volume / maxVolume) * 100}%` }}
+              title={`${week.workouts} workouts · ${formatKg(week.volume)}`}
+            />
+          </div>
+          <span>{week.start.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function TrendChart({ sessions }) {
   const data = sessions.filter(
     (session) => session.best_estimated_1rm != null,
@@ -139,6 +194,10 @@ function Progress() {
       })),
     ), [progress],
   )
+  const weeklyVolume = useMemo(
+    () => buildWeeklyVolume(allSessions),
+    [allSessions],
+  )
   const recordedSessions = allSessions.filter(
     (session) => session.best_estimated_1rm != null,
   )
@@ -155,6 +214,10 @@ function Progress() {
   )
   const recentSessions = recordedSessions.slice()
     .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6)
+  const activeWeeks = weeklyVolume.filter((week) => week.workouts > 0).length
+  const completedWorkouts = weeklyVolume.reduce((total, week) => total + week.workouts, 0)
+  const recentVolume = weeklyVolume.reduce((total, week) => total + week.volume, 0)
+  const averageWeeklyVolume = activeWeeks > 0 ? recentVolume / activeWeeks : 0
 
   const insight = selectedSessions.length < 2
     ? 'Log another working session to establish a meaningful strength trend.'
@@ -185,6 +248,18 @@ function Progress() {
         <article className="glass-card progress-stat"><span>RECORDED SESSIONS</span><strong>{recordedSessions.length}</strong><small>Exercise performances</small></article>
         <article className="glass-card progress-stat"><span>TRACKED EXERCISES</span><strong>{trackedExercises.length}</strong><small>of {exercises.length} in your library</small></article>
         <article className="glass-card progress-stat highlight-stat"><span>BEST ESTIMATED 1RM</span><strong>{formatKg(bestExercise?.personal_best_1rm)}</strong><small>{bestExercise?.exercise_name || 'No data yet'}</small></article>
+      </section>
+
+      <section className="glass-card weekly-load-card">
+        <div className="weekly-load-heading">
+          <div><span className="eyebrow">CONSISTENCY</span><h2>Eight-week training load</h2></div>
+          <div className="weekly-load-stats">
+            <div><span>ACTIVE WEEKS</span><strong>{activeWeeks}/8</strong></div>
+            <div><span>WORKOUTS</span><strong>{completedWorkouts}</strong></div>
+            <div><span>AVG ACTIVE WEEK</span><strong>{formatKg(averageWeeklyVolume)}</strong></div>
+          </div>
+        </div>
+        <WeeklyVolumeChart weeks={weeklyVolume} />
       </section>
 
       <section className="glass-card analytics-card">
