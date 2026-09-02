@@ -11,14 +11,48 @@ function formatDate(dateString) {
   })
 }
 
+function formatVolume(value) {
+  return `${Math.round(value).toLocaleString('en-GB')} kg`
+}
+
+function formatDuration(minutes) {
+  if (minutes == null) return null
+  if (minutes < 60) return `${minutes} min`
+
+  const hours = Math.floor(minutes / 60)
+  const remainder = minutes % 60
+  return remainder > 0 ? `${hours}h ${remainder}m` : `${hours}h`
+}
+
+function getWorkoutMetrics(workout) {
+  const sets = workout.exercises?.flatMap((exercise) => exercise.sets || []) || []
+  const completedSets = sets.filter(
+    (set) => Number(set.weight) > 0 && Number(set.reps) > 0,
+  )
+  const volume = completedSets.reduce(
+    (total, set) => total + Number(set.weight) * Number(set.reps),
+    0,
+  )
+  const duration = workout.completed_at
+    ? Math.max(
+        1,
+        Math.round(
+          (new Date(workout.completed_at) - new Date(workout.started_at)) / 60000,
+        ),
+      )
+    : null
+
+  return {
+    totalSets: sets.length,
+    completedSets: completedSets.length,
+    volume,
+    duration,
+  }
+}
+
 function WorkoutCard({ workout }) {
   const exerciseCount = workout.exercises?.length ?? 0
-
-  const setCount =
-    workout.exercises?.reduce(
-      (total, exercise) => total + (exercise.sets?.length ?? 0),
-      0,
-    ) ?? 0
+  const metrics = getWorkoutMetrics(workout)
 
   return (
     <Link to={`/workouts/${workout.id}`} className="workout-card">
@@ -41,7 +75,16 @@ function WorkoutCard({ workout }) {
         <span className="meta-separator">·</span>
         <span>{exerciseCount} exercises</span>
         <span className="meta-separator">·</span>
-        <span>{setCount} sets</span>
+        <span>{metrics.completedSets}/{metrics.totalSets} sets logged</span>
+        {metrics.volume > 0 && (
+          <><span className="meta-separator">·</span><span>{formatVolume(metrics.volume)} volume</span></>
+        )}
+        {metrics.duration != null && (
+          <><span className="meta-separator">·</span><span>{formatDuration(metrics.duration)}</span></>
+        )}
+        {workout.body_weight != null && (
+          <><span className="meta-separator">·</span><span>{workout.body_weight} kg body weight</span></>
+        )}
       </div>
     </Link>
   )
@@ -52,6 +95,21 @@ function Workouts() {
   const [workouts, setWorkouts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const workoutMetrics = workouts.map(getWorkoutMetrics)
+  const completedWorkoutCount = workouts.filter((workout) => workout.completed_at).length
+  const totalCompletedSets = workoutMetrics.reduce(
+    (total, metrics) => total + metrics.completedSets,
+    0,
+  )
+  const totalVolume = workoutMetrics.reduce(
+    (total, metrics) => total + metrics.volume,
+    0,
+  )
+  const totalDuration = workoutMetrics.reduce(
+    (total, metrics) => total + (metrics.duration || 0),
+    0,
+  )
 
   useEffect(() => {
     async function loadWorkouts() {
@@ -87,6 +145,15 @@ function Workouts() {
           + Start Workout
         </Link>
       </div>
+
+      {!loading && !error && workouts.length > 0 && (
+        <section className="training-log-summary" aria-label="Training log summary">
+          <article><span>COMPLETED</span><strong>{completedWorkoutCount}</strong><small>sessions</small></article>
+          <article><span>WORKING SETS</span><strong>{totalCompletedSets}</strong><small>recorded</small></article>
+          <article><span>TOTAL VOLUME</span><strong>{formatVolume(totalVolume)}</strong><small>logged load</small></article>
+          <article><span>TRAINING TIME</span><strong>{formatDuration(totalDuration) || '—'}</strong><small>completed sessions</small></article>
+        </section>
+      )}
 
       <section className="workouts-section">
         <div className="section-heading">
