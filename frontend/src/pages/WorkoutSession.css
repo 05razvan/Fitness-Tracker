@@ -122,6 +122,21 @@
   letter-spacing: -0.02em;
 }
 
+.previous-performance {
+  margin: 8px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.previous-performance span {
+  margin-right: 8px;
+  color: rgba(245, 158, 11, 0.75);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
 .sets-header,
 .set-row {
   display: grid;

@@ -38,9 +38,11 @@ class WorkoutSetResponse(BaseModel):
 class WorkoutExerciseResponse(BaseModel):
     id: int
     exercise_id: int
+    exercise_name: str
     order: int
     notes: str | None
     sets: list[WorkoutSetResponse]
+    previous_sets: list[WorkoutSetResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

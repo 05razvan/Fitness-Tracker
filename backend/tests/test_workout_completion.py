@@ -7,14 +7,16 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.database import Base
+from app.db.models.exercise import Exercise
 from app.db.models.workout import Workout, WorkoutExercise, WorkoutSet
 from app.routers.workouts import (
     add_workout_set,
     complete_workout,
     delete_workout_set,
+    get_workout_with_relationships,
     update_workout_set,
 )
-from app.schemas.workout import WorkoutSetUpdate
+from app.schemas.workout import WorkoutResponse, WorkoutSetUpdate
 
 
 @pytest.fixture
@@ -144,3 +146,61 @@ def test_completed_workout_sets_cannot_be_changed(db_session):
 
     assert error.value.status_code == 409
     assert error.value.detail == "Completed workouts cannot be changed"
+
+
+def test_workout_includes_exercise_name_and_previous_performance(db_session):
+    exercise = Exercise(
+        name="Barbell Bench Press",
+        primary_muscle="Chest",
+        exercise_type="strength",
+        category="compound",
+    )
+    db_session.add(exercise)
+    db_session.flush()
+    previous_workout = Workout(
+        user_id=1,
+        name="Previous push day",
+        started_at=datetime(2026, 8, 20, 10, 0),
+        completed_at=datetime(2026, 8, 20, 11, 0),
+    )
+    current_workout = Workout(
+        user_id=1,
+        name="Current push day",
+        started_at=datetime(2026, 8, 27, 10, 0),
+    )
+    db_session.add_all([previous_workout, current_workout])
+    db_session.flush()
+    previous_exercise = WorkoutExercise(
+        workout_id=previous_workout.id,
+        exercise_id=exercise.id,
+        order=1,
+    )
+    current_exercise = WorkoutExercise(
+        workout_id=current_workout.id,
+        exercise_id=exercise.id,
+        order=1,
+    )
+    db_session.add_all([previous_exercise, current_exercise])
+    db_session.flush()
+    db_session.add_all([
+        WorkoutSet(
+            workout_exercise_id=previous_exercise.id,
+            set_number=1,
+            weight=60,
+            reps=8,
+        ),
+        WorkoutSet(
+            workout_exercise_id=current_exercise.id,
+            set_number=1,
+            weight=None,
+            reps=0,
+        ),
+    ])
+    db_session.commit()
+
+    workout = get_workout_with_relationships(current_workout.id, db_session)
+    response = WorkoutResponse.model_validate(workout)
+
+    assert response.exercises[0].exercise_name == "Barbell Bench Press"
+    assert response.exercises[0].previous_sets[0].weight == 60
+    assert response.exercises[0].previous_sets[0].reps == 8

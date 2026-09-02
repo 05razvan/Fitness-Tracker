@@ -9,6 +9,9 @@ import {
 } from '../services/api'
 import './WorkoutSession.css'
 
+const formatPreviousSet = (set) =>
+  `${Number(set.weight).toLocaleString(undefined, { maximumFractionDigits: 1 })} kg × ${set.reps}`
+
 function WorkoutSession() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -337,6 +340,12 @@ function WorkoutSession() {
                   {exercise.exercise_name ||
                     `Exercise ${exercise.exercise_id}`}
                 </h2>
+                {exercise.previous_sets?.length > 0 && (
+                  <p className="previous-performance">
+                    <span>LAST SESSION</span>
+                    {exercise.previous_sets.map(formatPreviousSet).join(' · ')}
+                  </p>
+                )}
               </div>
             </div>
 
