@@ -32,6 +32,10 @@ export const repeatWorkout = async (id) => {
   return response.data
 }
 
+export const deleteWorkout = async (id) => {
+  await api.delete(`/workouts/${id}`)
+}
+
 export const getWorkoutPresets = async () => {
   const response = await api.get('/presets/')
   return response.data

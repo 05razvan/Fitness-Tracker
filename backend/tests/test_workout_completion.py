@@ -14,6 +14,7 @@ from app.routers.workouts import (
     add_workout_set,
     complete_workout,
     delete_workout_exercise,
+    delete_workout,
     delete_workout_set,
     get_workout_with_relationships,
     reorder_workout_exercises,
@@ -378,3 +379,36 @@ def test_completed_workout_can_be_repeated_as_fresh_session(db_session):
     assert len(repeated.exercises) == 1
     assert len(repeated.exercises[0].sets) == 3
     assert all(item.weight is None and item.reps == 0 for item in repeated.exercises[0].sets)
+
+
+def test_workout_deletion_removes_exercises_and_sets(db_session):
+    workout = Workout(user_id=1, name="Delete me")
+    db_session.add(workout)
+    db_session.flush()
+    workout_exercise = WorkoutExercise(
+        workout_id=workout.id,
+        exercise_id=1,
+        order=1,
+    )
+    db_session.add(workout_exercise)
+    db_session.flush()
+    db_session.add(
+        WorkoutSet(
+            workout_exercise_id=workout_exercise.id,
+            set_number=1,
+            weight=40,
+            reps=10,
+        )
+    )
+    db_session.commit()
+
+    delete_workout(workout.id, db_session)
+
+    assert db_session.query(Workout).count() == 0
+    assert db_session.query(WorkoutExercise).count() == 0
+    assert db_session.query(WorkoutSet).count() == 0
+
+    with pytest.raises(HTTPException) as error:
+        delete_workout(workout.id, db_session)
+
+    assert error.value.status_code == 404

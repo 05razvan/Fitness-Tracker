@@ -4,6 +4,7 @@ import {
   addWorkoutExercise,
   addWorkoutSet,
   completeWorkout,
+  deleteWorkout,
   deleteWorkoutExercise,
   deleteWorkoutSet,
   getExercises,
@@ -38,6 +39,7 @@ function WorkoutSession() {
   const [modifyingExerciseIds, setModifyingExerciseIds] = useState(new Set())
   const [completing, setCompleting] = useState(false)
   const [repeating, setRepeating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [saveError, setSaveError] = useState('')
   const [completionError, setCompletionError] = useState('')
@@ -333,6 +335,26 @@ function WorkoutSession() {
       console.error(err)
       setCompletionError('Unable to create a new session from this workout.')
       setRepeating(false)
+    }
+  }
+
+  const handleDeleteWorkout = async () => {
+    if (deleting) return
+    const status = isCompleted ? 'completed workout' : 'active workout and its saved progress'
+    if (!window.confirm(`Permanently delete this ${status}? This cannot be undone.`)) {
+      return
+    }
+
+    setDeleting(true)
+    setCompletionError('')
+
+    try {
+      await deleteWorkout(workout.id)
+      navigate('/workouts', { replace: true })
+    } catch (err) {
+      console.error(err)
+      setCompletionError('Unable to delete this workout. No data was removed.')
+      setDeleting(false)
     }
   }
 
@@ -861,6 +883,14 @@ function WorkoutSession() {
             {completionError}
           </p>
         )}
+
+        <button
+          className="danger-action"
+          onClick={handleDeleteWorkout}
+          disabled={deleting || repeating || completing}
+        >
+          {deleting ? 'Deleting...' : 'Delete workout'}
+        </button>
 
         <button
           className="secondary-action"

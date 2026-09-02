@@ -465,6 +465,38 @@ def repeat_workout(
     return get_workout_with_relationships(repeated_workout.id, db)
 
 
+@router.delete("/{workout_id}", status_code=204)
+def delete_workout(
+    workout_id: int,
+    db: Session = Depends(get_db),
+):
+    workout = db.query(Workout).filter(Workout.id == workout_id).first()
+
+    if not workout:
+        raise HTTPException(status_code=404, detail="Workout not found")
+
+    workout_exercise_ids = [
+        item.id
+        for item in db.query(WorkoutExercise.id)
+        .filter(WorkoutExercise.workout_id == workout_id)
+        .all()
+    ]
+    if workout_exercise_ids:
+        (
+            db.query(WorkoutSet)
+            .filter(WorkoutSet.workout_exercise_id.in_(workout_exercise_ids))
+            .delete(synchronize_session=False)
+        )
+    (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.workout_id == workout_id)
+        .delete(synchronize_session=False)
+    )
+    db.delete(workout)
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.patch(
     "/sets/{set_id}",
     response_model=WorkoutSetResponse,
