@@ -355,7 +355,7 @@
 .sets-header,
 .set-row {
   display: grid;
-  grid-template-columns: 70px 1fr 1fr 112px;
+  grid-template-columns: 58px 1fr 1fr minmax(150px, 1.15fr) 112px;
   gap: 16px;
   align-items: center;
 }
@@ -395,6 +395,25 @@
 .set-row label {
   position: relative;
   display: block;
+}
+
+.effort-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.effort-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted-foreground);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.effort-inputs input {
+  padding-right: 13px;
 }
 
 .set-row input {
@@ -785,6 +804,10 @@
     grid-column: 2 / -1;
     width: 100%;
     margin-top: 2px;
+  }
+
+  .effort-inputs {
+    grid-column: 2 / -1;
   }
 
   .mobile-label {

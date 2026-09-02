@@ -217,6 +217,8 @@ function WorkoutSession() {
       const updated = await updateWorkoutSet(set.id, {
         weight: set.weight,
         reps: set.reps,
+        rpe: set.rpe,
+        rir: set.rir,
         notes: set.notes || '',
       })
 
@@ -718,6 +720,7 @@ function WorkoutSession() {
               <span>SET</span>
               <span>WEIGHT</span>
               <span>REPS</span>
+              <span>EFFORT</span>
               <span>ACTION</span>
             </div>
 
@@ -776,6 +779,41 @@ function WorkoutSession() {
                         disabled={isCompleted}
                       />
                     </label>
+
+                    <div className="effort-inputs">
+                      <label>
+                        <span className="effort-label">RPE</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          step="0.5"
+                          value={set.rpe ?? ''}
+                          placeholder="—"
+                          aria-label={`RPE for set ${set.set_number}`}
+                          onChange={(event) =>
+                            handleSetChange(set.id, 'rpe', event.target.value)
+                          }
+                          disabled={isCompleted}
+                        />
+                      </label>
+                      <label>
+                        <span className="effort-label">RIR</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="1"
+                          value={set.rir ?? ''}
+                          placeholder="—"
+                          aria-label={`Reps in reserve for set ${set.set_number}`}
+                          onChange={(event) =>
+                            handleSetChange(set.id, 'rir', event.target.value)
+                          }
+                          disabled={isCompleted}
+                        />
+                      </label>
+                    </div>
 
                     {isCompleted ? (
                       <span className="set-locked">
