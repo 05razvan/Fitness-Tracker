@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import {
+  createWorkoutPreset,
   getExercises,
   getWorkoutPresets,
   startWorkoutFromPreset,
 } from '../services/api'
+import PresetEditor from '../components/PresetEditor'
 
 import './StartWorkout.css'
 
@@ -16,6 +18,8 @@ function StartWorkout() {
   const [loading, setLoading] = useState(true)
   const [startingId, setStartingId] = useState(null)
   const [error, setError] = useState('')
+  const [showEditor, setShowEditor] = useState(false)
+  const [savingPreset, setSavingPreset] = useState(false)
 
   useEffect(() => {
     loadPresets()
@@ -59,6 +63,21 @@ function StartWorkout() {
     }
   }
 
+  async function handleCreatePreset(data) {
+    try {
+      setSavingPreset(true)
+      setError('')
+      const created = await createWorkoutPreset(data)
+      setPresets((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)))
+      setShowEditor(false)
+    } catch (requestError) {
+      console.error(requestError)
+      setError('Unable to create this preset. Check the exercise targets and try again.')
+    } finally {
+      setSavingPreset(false)
+    }
+  }
+
   return (
     <main className="page start-workout-page">
       <Link to="/workouts" className="start-back-link">
@@ -66,13 +85,22 @@ function StartWorkout() {
       </Link>
 
       <header className="start-workout-header">
-        <span className="eyebrow">NEW SESSION</span>
-        <h1>Start a workout</h1>
-        <p>
-          Choose a training preset. Your exercises and target sets will be
-          prepared in a new session.
-        </p>
+        <div>
+          <span className="eyebrow">NEW SESSION</span>
+          <h1>Start a workout</h1>
+          <p>Choose a training preset or build a new structure for your next session.</p>
+        </div>
+        <button type="button" className="new-preset-button" onClick={() => setShowEditor(true)}>+ New preset</button>
       </header>
+
+      {showEditor && (
+        <PresetEditor
+          exercises={exercises}
+          onSave={handleCreatePreset}
+          onCancel={() => setShowEditor(false)}
+          saving={savingPreset}
+        />
+      )}
 
       {loading && (
         <div className="start-workout-state">
@@ -94,8 +122,8 @@ function StartWorkout() {
         <div className="start-workout-state start-empty">
           <span className="start-empty-mark">+</span>
           <h2>No presets available</h2>
-          <p>Create a workout preset through the API to start a structured session.</p>
-          <Link to="/workouts" className="secondary-button">Back to workouts</Link>
+          <p>Create your first reusable training structure to start a session.</p>
+          <button type="button" className="secondary-button" onClick={() => setShowEditor(true)}>Create preset</button>
         </div>
       )}
 

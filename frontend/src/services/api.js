@@ -41,6 +41,11 @@ export const getWorkoutPresets = async () => {
   return response.data
 }
 
+export const createWorkoutPreset = async (data) => {
+  const response = await api.post('/presets/', data)
+  return response.data
+}
+
 export const startWorkoutFromPreset = async (presetId) => {
   const response = await api.post(`/presets/${presetId}/start`)
   return response.data
